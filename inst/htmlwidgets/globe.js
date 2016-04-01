@@ -18,7 +18,7 @@ HTMLWidgets.widget(
     }
     r.setSize(parseInt(width), parseInt(height));
     r.setClearColor("black");
-    d3.select(el).node().appendChild(r.domElement);
+    el.appendChild(r.domElement);
     var c = new THREE.PerspectiveCamera( 35, r.domElement.width / r.domElement.height, 1, 10000 );
     var s = new THREE.Scene();
     return {renderer:r, camera:c, scene: s, width: parseInt(width), height: parseInt(height)};
@@ -28,6 +28,8 @@ HTMLWidgets.widget(
   {
     stuff.renderer.clear();
     stuff.renderer.setSize( width, height );
+    stuff.width = width;
+    stuff.height = height;
     stuff.camera.projectionMatrix = new THREE.Matrix4().makePerspective(stuff.camera.fov,  stuff.renderer.domElement.width/stuff.renderer.domElement.height, stuff.camera.near, stuff.camera.far);
     stuff.camera.lookAt(stuff.scene.position);
     stuff.renderer.render( stuff.scene, stuff.camera );
@@ -86,8 +88,8 @@ HTMLWidgets.widget(
         GL=false;
         stuff.renderer.setSize(stuff.width, stuff.height);
         stuff.renderer.setClearColor("black");
-        d3.select(el).node().removeChild(d3.select(el).node().children[0]);
-        d3.select(el).node().appendChild(stuff.renderer.domElement);
+        el.removeChild(el.children[0]);
+        el.appendChild(stuff.renderer.domElement);
       }
     }
 
@@ -116,10 +118,10 @@ HTMLWidgets.widget(
       tex.needsUpdate = true;
     } else
     {
-      tex = THREE.ImageUtils.loadTexture( x.img );
+      tex = THREE.ImageUtils.loadTexture(x.img);
     }
 
-    var material = new THREE.MeshLambertMaterial({map: tex, color: x.bodycolor, emissive:x.emissive});
+    var material = new THREE.MeshLambertMaterial({map: tex, color: x.bodycolor, emissive: x.emissive});
 
     earth = new THREE.Mesh( geometry, material );
     earth.position.x = earth.position.y = 0;

@@ -1,6 +1,6 @@
-#' globejs Three.js globe widget
+#' Plot Data on 3D Globes
 #'
-#' Three.js widget for mapping points, arcs and images on a globe. The globe
+#' Plot points, arcs and images on a globe in 3D using Three.js. The globe
 #' can be rotated and and zoomed.
 #'
 #' @param img A character string representing a file path or URI of an image to plot on the globe surface.
@@ -20,13 +20,16 @@
 #' @param ... Additional arguments to pass to the three.js renderer (see
 #' below for more information on these options).
 #'
+#' @return
+#' An htmlwidget object (displayed using the object's show or print method).
+#'
 #' @note
 #' The \code{img} argument specifies the WebGL texture image to wrap on a
 #' sphere. If you plan to plot points using \code{lat} and \code{lon}
 #' the image must be a plate carree (aka lat/long) equirectangular
 #' map projection; see
 #' \url{https://en.wikipedia.org/wiki/Equirectangular_projection} for
-#' details..
+#' details.
 #' Lat/long maps are commonly found for most planetary bodies in the
 #' solar system, and are also easily generated directly in R
 #' (see the references and examples below).
@@ -61,25 +64,12 @@
 #' An excellent overview of available map coordinate reference systems (PDF):
 #' \url{https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf}
 #'
-#' Includes ideas and images from the dat.globe Javascript WebGL Globe Toolkit
-#' Copyright 2011 Data Arts Team, Google Creative Lab
-#' Licensed under the Apache License, Version 2.0
-#' \url{http://www.apache.org/licenses/LICENSE-2.0}
-#'
-#' NASA Blue Marble/MODIS Earth images \url{visibleearth.nasa.gov}
-#'
-#' Moon image: \url{http://maps.jpl.nasa.gov/textures/ear1ccc2.jpg}.
-#'
-#' Mars image: \url{http://pdsmaps.wr.usgs.gov/PDS/public/explorer/html/marsadvc.htm}.
-#'
-#' Jupiter image: \url{http://maps.jpl.nasa.gov/textures/jup0vtt2.jpg}.
+#' Includes images adapted from the NASA Earth Observatory and NASA Jet Propulsion Laboratory.
+#' World image link: \url{http://goo.gl/GVjxJ}.
 #'
 #' @examples
-#' \dontrun{
-#' library("threejs")
-#"
-#' # Plot flights to frequent destinations from
-#' # Callum Prentice's global flight data set,
+#' # Plot flights to frequent destinations from Callum Prentice's
+#' # global flight data set,
 #' # http://callumprentice.github.io/apps/flight_stream/index.html
 #' data(flights)
 #' # Approximate locations as factors
@@ -99,20 +89,13 @@
 #'         arcsHeight=0.3, arcsLwd=2, arcsColor="#ffff00", arcsOpacity=0.15,
 #'         atmosphere=TRUE, color="#00aaff", pointsize=0.5)
 #'
-#' # A shiny example:
-#'
-#' shiny::runApp(system.file("examples/globe",package="threejs"))
-#' 
-#' # Plot populous world cities from the 'maps' package.
-#' library("threejs")
-#' library("maps")
+#' # Plot populous world cities from the maps package.
+#' library(threejs)
+#' library(maps)
 #' data(world.cities, package="maps")
-#' cities <- world.cities[order(world.cities$pop,decreasing=TRUE)[1:1000],]
+#' cities <- world.cities[order(world.cities$pop, decreasing=TRUE)[1:1000],]
 #' value  <- 100 * cities$pop / max(cities$pop)
-#' 
-#' # Set up a data color map and plot
-#' col <- rainbow(10,start=2.8/6,end=3.4/6)
-#' col <- col[floor(length(col)*(100-value)/100) + 1]
+#' col <- colorRampPalette(c("cyan", "lightgreen"))(10)[floor(10 * value/100) + 1]
 #' globejs(lat=cities$lat, long=cities$long, value=value, color=col, atmosphere=TRUE)
 #'
 #' # Plot the data on the moon:
@@ -121,32 +104,31 @@
 #'          lightcolor="#555555", lat=cities$lat, long=cities$long,
 #'          value=value, color=col)
 #'
-#' # Plot a high-resolution NASA MODIS globe (it can take a while to download
-#' # the image!)
-#' globejs(paste("http://eoimages.gsfc.nasa.gov/",
-#'               "images/imagerecords/73000/73909/",
-#'               "world.topo.bathy.200412.3x5400x2700.jpg",sep="")
+#' \dontrun{
+#' # Plot a high-resolution NASA MODIS globe, setting colors to more closely reproduce
+#' # the natural image colors. Note that this example can can take a while to download!
+#' globejs("http://goo.gl/GVjxJ",
+#'         emmisive="#000000", bodycolor="#000000", lightcolor="#aaaa44")
 #'
 #' # Using global plots from the maptools, rworldmap, or sp packages.
 #'
-#' # Instead of using ready-made images of the earth, we can employ some
-#' # incredibly capable R spatial imaging packages to produce globe images
+#' # Instead of using ready-made images of the earth, we can use
+#' # many R spatial imaging packages to produce globe images
 #' # dynamically. With a little extra effort you can build globes with total
 #' # control over how they are plotted.
 #'
-#' library("maptools")
-#' library("threejs")
+#' library(maptools)
+#' library(threejs)
 #' data(wrld_simpl)
 #' 
 #' bgcolor <- "#000025"
 #' earth <- tempfile(fileext=".jpg")
 #'
-#'
 #' # NOTE: Use antialiasing to smooth border boundary lines. But! Set the jpeg
 #' # background color to the globe background color to avoid a visible aliasing
 #' # effect at the the plot edges.
 #'
-#' jpeg(earth,width=2048,height=1024,quality=100,bg=bgcolor,antialias="default")
+#' jpeg(earth, width=2048, height=1024, quality=100, bg=bgcolor, antialias="default")
 #' par(mar = c(0,0,0,0), pin = c(4,2), pty = "m",  xaxs = "i",
 #'     xaxt = "n",       xpd = FALSE,  yaxs = "i", bty = "n", yaxt = "n")
 #' plot(wrld_simpl, col="black", bg=bgcolor, border="cyan", ann=FALSE,
@@ -154,9 +136,12 @@
 #'      setParUsrBB=TRUE)
 #' dev.off()
 #' globejs(earth)
-#' See http://bwlewis.github.io/rthreejs for additional examples.
-#' }
 #'
+#' # A shiny example:
+#' shiny::runApp(system.file("examples/globe",package="threejs"))
+#' }
+#' 
+#' # See http://bwlewis.github.io/rthreejs for additional examples.
 #' @export
 globejs <- function(
   img=system.file("images/world.jpg",  package="threejs"),
@@ -173,66 +158,66 @@ globejs <- function(
   height = NULL,
   width = NULL, ...)
 {
-  if(missing(lat)|| missing(long))
+  if(missing(lat) || missing(long))
   {
     lat = NULL
     long = NULL
   }
   # Strip alpha channel from colors
-  i = grep("^#",color)
-  if(length(i)>0)
+  i = grep("^#", color)
+  if(length(i) > 0)
   {
-    j = nchar(color[i])>7
+    j = nchar(color[i]) > 7
     if(any(j))
-    { 
-      color[i][j] = substr(color[i][j],1,7)
+    {
+      color[i][j] = substr(color[i][j], 1, 7)
     }
   }
-  i = grep("^#",arcsColor)
-  if(length(i)>0)
+  i = grep("^#", arcsColor)
+  if(length(i) > 0)
   {
-    j = nchar(arcsColor[i])>7
+    j = nchar(arcsColor[i]) > 7
     if(any(j))
-    { 
-      arcsColor[i][j] = substr(arcsColor[i][j],1,7)
+    {
+      arcsColor[i][j] = substr(arcsColor[i][j], 1, 7)
     }
   }
-  i = grep("^#",bg)
-  if(length(i)>0) bg = substr(bg,1,7)
+  i = grep("^#", bg)
+  if(length(i) > 0) bg = substr(bg, 1, 7)
   if(missing(arcs))
-    arcs=NULL
+    arcs = NULL
   else
   {
     arcs = data.frame(arcs)
-    names(arcs) = c("fromlat","fromlong","tolat","tolong")
+    names(arcs) = c("fromlat", "fromlong", "tolat", "tolong")
   }
   arcsHeight = max(min(arcsHeight, 1), 0.2)
-  arcsOpacity = max(min(arcsOpacity,1),0)
+  arcsOpacity = max(min(arcsOpacity, 1), 0)
 
   options = list(lat=lat, long=long, color=color, arcsOpacity=arcsOpacity,
                  value=value, atmosphere=atmosphere, bg=bg, arcs=arcs,
                  arcsColor=arcsColor, arcsLwd=arcsLwd, arcsHeight=arcsHeight)
   additional_args = list(...)
-  if(length(additional_args)>0) options = c(options, additional_args)
+  if(length(additional_args) > 0) options = c(options, additional_args)
 # Clean up optional color arguments
   if("bodycolor" %in% names(options))
   {
     i = grep("^#",options$bodycolor)
-    if(length(i)>0) options$bodycolor = substr(options$bodycolor,1,7)
+    if(length(i) > 0) options$bodycolor = substr(options$bodycolor,1,7)
   }
   if("emissive" %in% names(options))
   {
     i = grep("^#",options$emissive)
-    if(length(i)>0) options$emissive = substr(options$emissive,1,7)
+    if(length(i) > 0) options$emissive = substr(options$emissive,1,7)
   }
   if("lightcolor" %in% names(options))
   {
     i = grep("^#",options$lightcolor)
-    if(length(i)>0) options$lightcolor = substr(options$lightcolor,1,7)
+    if(length(i) > 0) options$lightcolor = substr(options$lightcolor,1,7)
   }
 
 # Convert image files to dataURI using the texture function
-  if(!is.list(img)) img=texture(img)
+  if (!is.list(img)) img = texture(img)
   x = c(img, options)
   htmlwidgets::createWidget(
       name = "globe",
@@ -253,6 +238,8 @@ globeOutput <- function(outputId, width = "100%", height = "600px") {
 #' @rdname threejs-shiny
 #' @export
 renderGlobe <- function(expr, env = parent.frame(), quoted = FALSE) {
-    if (!quoted) { expr <- substitute(expr) } # force quoted
+    if (!quoted) {
+      expr = substitute(expr)
+    } # force quoted
     shinyRenderWidget(expr, globeOutput, env, quoted = TRUE)
 }
