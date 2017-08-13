@@ -6,10 +6,10 @@
 \usage{
 scatterplot3js(x, y, z, height = NULL, width = NULL, axis = TRUE,
   num.ticks = c(6, 6, 6), x.ticklabs = NULL, y.ticklabs = NULL,
-  z.ticklabs = NULL, color = "steelblue", size = 1, labels = NULL,
-  label.margin = "10px", stroke = "black", flip.y = TRUE, grid = TRUE,
-  renderer = c("auto", "canvas", "webgl"), signif = 8, bg = "#ffffff",
-  xlim, ylim, zlim, pch, ...)
+  z.ticklabs = NULL, color = "steelblue", size = cex.symbols,
+  stroke = "black", flip.y = TRUE, grid = TRUE, renderer = c("auto",
+  "canvas"), signif = 8, bg = "#ffffff", cex.symbols = 1, xlim, ylim,
+  zlim, pch = "@", ...)
 }
 \arguments{
 \item{x}{Either a vector of x-coordinate values or a  three-column
@@ -43,19 +43,11 @@ of ticks may be adjusted by the program.}
 \code{NULL} to show numeric labels.}
 
 \item{color}{Either a single hex or named color name (all points same color),
-or a vector of #' hex or named color names as long as the number of data
+or a vector of  hex or named color names as long as the number of data
 points to plot.}
 
 \item{size}{The plot point radius, either as a single number or a
-vector of sizes of length \code{nrow(x)}. A vector of sizes is only
-supported by the \code{canvas} renderer. The \code{webgl} renderer accepts
-a single size value for all points.}
-
-\item{labels}{Either NULL (no labels), or a vector of labels as long as the
-number of data points displayed when the mouse hovers over each point.}
-
-\item{label.margin}{A CSS-style margin string used to display the point
-labels.}
+vector of sizes of length \code{nrow(x)}.}
 
 \item{stroke}{A single color stroke value (surrounding each point). Set to
 null to omit stroke (only available in the canvas renderer).}
@@ -67,7 +59,8 @@ TRUE produces plots similar to those rendered by the R
 \item{grid}{Set FALSE to disable display of a grid.}
 
 \item{renderer}{Select from available plot rendering techniques of
-'auto', 'canvas', or 'webgl'.}
+'auto' or 'canvas'. Set to 'canvas' to explicitly use non-accelerated Canvas
+rendering, otherwise WebGL is used if available.}
 
 \item{signif}{Number of significant digits used to represent point
 coordinates. Larger numbers increase accuracy but slow plot generation
@@ -75,108 +68,176 @@ down.}
 
 \item{bg}{The color to be used for the background of the device region.}
 
+\item{cex.symbols}{Equivalent to the \code{size} parameter.}
+
 \item{xlim}{Optional two-element vector of x-axis limits. Default auto-scales to data.}
 
 \item{ylim}{Optional two-element vector of y-axis limits. Default auto-scales to data.}
 
 \item{zlim}{Optional two-element vector of z-axis limits. Default auto-scales to data.}
 
-\item{pch}{Not yet used but one day will support changing the point glyph.}
+\item{pch}{Optional point glyphs, see notes.}
 
 \item{...}{Additional options (see note).}
 }
 \value{
 An htmlwidget object that is displayed using the object's show or print method.
-(If you don't see your widget plot, try printing it with the \code{print}) function. The
-returned object includes a special \code{points3d} function for adding points to the
-plot similar to \code{scatterplot3d}. See the note below and examples for details.
+(If you don't see your widget plot, try printing it with the \code{print} function.)
 }
 \description{
 A 3D scatterplot widget using three.js. Many options
-follow the \code{scatterplot3d} function from the eponymous package.
+follow the \code{scatterplot3d} package.
 }
 \note{
-Points with missing values are omitted.
+Points with missing values are omitted from the plot, please try to avoid missing values
+in \code{x, y, z}.
+}
+\section{Interacting with the plot}{
 
-Use the \code{renderer} option to manually select from the available
-rendering options.
-The \code{canvas} renderer is the fallback rendering option when \code{webgl}
-is not available. Select \code{auto} to automatically choose between
-the two. The two renderers produce slightly different-looking output
-and have different available options (see above). Use the \code{webgl}
-renderer for plotting large numbers of points (if available). Use the
-\code{canvas} renderer to excercise finer control of plotting of smaller
-numbers of points. See the examples.
+Press and hold the left mouse button (or touch or trackpad equivalent) and move
+the mouse to rotate the plot. Press and hold the right mouse button (or touch
+equivalent) to pan. Use the mouse scroll wheel or touch equivalent to zoom.
+If \code{labels} are specified (see below), moving the mouse pointer over
+a point will display the label.
+}
+
+\section{Detailed plot options}{
 
 Use the optional \code{...} argument to explicitly supply \code{axisLabels}
-as a three-element character vector, see the examples below.
+as a three-element character vector, see the examples below. A few additional
+plot options are also supported:
+\itemize{
+  \item{"cex.lab"}{ font size scale factor for the axis labels}
+  \item{"cex.axis"}{ font size scale factor for the axis tick labels}
+  \item{"font.axis"}{ CSS font string used for all axis labels}
+  \item{"font.symbols"}{ CSS font string used for plot symbols}
+  \item{"font.main"}{ CSS font string used for main title text box}
+  \item{"labels"}{ character vector of length \code{x} of point labels displayed when the mouse moves over the points}
+  \item{"main"}{ Plot title text}
+  \item{"top"}{ Top location in pixels from top of the plot title text}
+  \item{"left"}{ Left location in pixels from center of the plot title text}
+}
+The default CSS font string is "48px Arial". Note that the format of this
+font string differs from, for instance, the usual `par(font.axis)`.
 
-The returned object includes a \code{points3d} function that can add points
-to a plot, returning a new htmlwidget plot object. The function signature
-is a subset of the full \code{scatterplot3js} function:
+Use the \code{pch} option to specify points styles in WebGL-rendered plots.
+\code{pch} may either be a single character value that applies to all points,
+or a vector of character values of the same length as \code{x}. All
+character values are used literally ('+', 'x', '*', etc.) except for the
+following special cases:
+\itemize{
+  \item{"o"}{ Plotted points appear as 3-d spheres.}
+  \item{"@"}{ Plotted points appear as stroked disks.}
+  \item{"."}{ Points appear as tiny squares.}
+}
+Character strings of more than one character are supported--see the examples.
+The \code{@} and {.} option exhibit the best performance, consider using
+one of those to plot large numbers of points.
 
- \code{points3d (x, y, z, color="steelblue", size=1, labels="")}
+Set the optional experimental \code{use.orbitcontrols=TRUE} argument to
+use a more CPU-efficient but somewhat less fluid mouse/touch interface.
+}
 
-It allows you to add points to a plot using the same syntax as \code{scatterplot3js}
-with optionally specified color, size, and labels. New points are plotted in
-the same scale as the existing plot. See the examples section below for an
-example.
+\section{Plotting lines}{
+
+See \code{\link{lines3d}} for an alternative interface.
+Lines are optionally drawn between points specified in \code{x, y, z} using
+the following new plot options.
+\itemize{
+  \item{"from"}{ A numeric vector of indices of line starting vertices corresponding to entries in \code{x}.}
+  \item{"to"}{ A numeric vector exactly as long as \code{from} of indices of line ending vertices corresponding
+      to entries in \code{x}.}
+  \item{"lcol"}{ Either a single color value or vector of values as long as from; line colors
+     default to interpolating their vertex point colors.}
+  \item{"lwd"}{ A single numeric value of line width (for all lines), defaults to 1.}
+  \item{"linealpha"}{ A single numeric value between 0 and 1 inclusive setting the transparency of all plot lines,
+     defaulting to 1.}
+}
+}
+
+\section{Highlighting selected points}{
+
+Specify the argument \code{brush=TRUE} to highlight a clicked point (currently
+limited to single-point selection).
+Optionally set the \code{highlight=<color>} and \code{lowlight=<color>}
+to manually control the brushing display colors. This feature works with
+crosstalk.
+}
+
+\section{Crosstalk}{
+
+The \code{scatterplot3js()} and \code{graphjs()} functions work with
+crosstalk selection (but not filtering yet); see https://rstudio.github.io/crosstalk/.
+Enable crosstalk with the optional agrument \code{crosstalk=df}, where \code{df} is a
+crosstalk-SharedData data.frame-like object with the same number of rows as points
+(\code{scatterplot3js()}) or graph vertices (\code{graphjs()}) (see the examples).
 }
 \examples{
-# Gumball machine
-N <- 100
-i <- sample(3, N, replace=TRUE)
-x <- matrix(rnorm(N*3),ncol=3)
-lab <- c("small", "bigger", "biggest")
-scatterplot3js(x, color=rainbow(N), labels=lab[i], size=i, renderer="canvas")
-
 # Example 1 from the scatterplot3d package (cf.)
 z <- seq(-10, 10, 0.1)
 x <- cos(z)
 y <- sin(z)
-scatterplot3js(x,y,z, color=rainbow(length(z)),
-      labels=sprintf("x=\%.2f, y=\%.2f, z=\%.2f", x, y, z))
+scatterplot3js(x, y, z, color=rainbow(length(z)))
 
 # Same example with explicit axis labels
-scatterplot3js(x,y,z, color=rainbow(length(z)), axisLabels=c("a","b","c"))
+scatterplot3js(x, y, z, color=rainbow(length(z)), axisLabels=c("a", "b", "c"))
 
-# Pretty point cloud example, should run this with WebGL!
+# Same example showing multiple point styles with pch
+scatterplot3js(x, y, z, color=rainbow(length(z)),
+               pch=sample(c(".", "o", letters), length(x), replace=TRUE))
+
+# Point cloud example, should run this with WebGL!
 N     <- 20000
-theta <- runif(N)*2*pi
-phi   <- runif(N)*2*pi
+theta <- runif (N) * 2 * pi
+phi   <- runif (N) * 2 * pi
 R     <- 1.5
 r     <- 1.0
-x <- (R + r*cos(theta))*cos(phi)
-y <- (R + r*cos(theta))*sin(phi)
-z <- r*sin(theta)
+x <- (R + r * cos(theta)) * cos(phi)
+y <- (R + r * cos(theta)) * sin(phi)
+z <- r * sin(theta)
 d <- 6
 h <- 6
-t <- 2*runif(N) - 1
-w <- t^2*sqrt(1-t^2)
-x1 <- d*cos(theta)*sin(phi)*w
-y1 <- d*sin(theta)*sin(phi)*w
+t <- 2 * runif (N) - 1
+w <- t^2 * sqrt(1 - t^2)
+x1 <- d * cos(theta) * sin(phi) * w
+y1 <- d * sin(theta) * sin(phi) * w
 i <- order(phi)
 j <- order(t)
 col <- c( rainbow(length(phi))[order(i)],
-         rainbow(length(t),start=0, end=2/6)[order(j)])
-M <- cbind(x=c(x,x1),y=c(y,y1),z=c(z,h*t))
-scatterplot3js(M,size=0.25,color=col,bg="black")
+         rainbow(length(t), start=0, end=2/6)[order(j)])
+M <- cbind(x=c(x, x1), y=c(y, y1), z=c(z, h*t))
+scatterplot3js(M, size=0.5, color=col, bg="black", pch=".")
 
-# Adding points to a plot with points3d
+# Plot generic text using 'pch' (we label some points in this example)
 set.seed(1)
-lim <- c(-3,3)
-x <- scatterplot3js(rnorm(5),rnorm(5),rnorm(5), xlim=lim, ylim=lim, zlim=lim)
-a <- x$points3d(rnorm(3),rnorm(3),rnorm(3)/2, color="red", labels="NEW")
+x <- rnorm(5); y <- rnorm(5); z <- rnorm(5)
+scatterplot3js(x, y, z, pch="@") \%>\%
+   points3d(x + 0.1, y + 0.1, z, color="red", pch=paste("point", 1:5))
+
 \dontrun{
   # A shiny example
-  shiny::runApp(system.file("examples/scatterplot",package="threejs"))
+  shiny::runApp(system.file("examples/scatterplot", package="threejs"))
+}
+
+\dontrun{
+  # A crosstalk example
+  library(crosstalk)
+  library(d3scatter) # devtools::install_github("jcheng5/d3scatter")
+  z <- seq(-10, 10, 0.1)
+  x <- cos(z)
+  y <- sin(z)
+  sd <- SharedData$new(data.frame(x=x, y=y, z=z))
+  print(bscols(
+    scatterplot3js(x, y, z, color=rainbow(length(z)), brush=TRUE, crosstalk=sd),
+    d3scatter(sd, ~x, ~y, width="100\%", height=300)
+  ))
 }
 
 }
 \references{
-The three.js project \url{http://threejs.org}.
+The three.js project: \url{http://threejs.org}. The HTML Widgets project: \url{http://htmlwidgets.org}.
 }
 \seealso{
-scatterplot3d, rgl
+scatterplot3d, rgl, points3d, lines3d
 }
 

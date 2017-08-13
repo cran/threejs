@@ -12,21 +12,28 @@ globejs(img = system.file("images/world.jpg", package = "threejs"), lat, long,
 \arguments{
 \item{img}{A character string representing a file path or URI of an image to plot on the globe surface.}
 
-\item{lat}{Optional data point decimal latitudes, must be of same length as \code{long} (negative values indicate south, positive north).}
+\item{lat}{Optional data point decimal latitudes, must be of same length as \code{long}
+(negative values indicate south, positive north).}
 
-\item{long}{Optional data point decimal longitudes, must be of same length as \code{lat} (negative values indicate west, positive east).}
+\item{long}{Optional data point decimal longitudes, must be of same length as \code{lat}
+(negative values indicate west, positive east).}
 
-\item{value}{Either a single value indicating the height of all data points, or a vector of values of the same length as \code{lat} indicating height of each point.}
+\item{value}{Either a single value indicating the height of all data points, or a vector of
+values of the same length as \code{lat} indicating height of each point.}
 
-\item{color}{Either a single color value indicating the color of all data points, or a vector of values of the same length as \code{lat} indicating color of each point.}
+\item{color}{Either a single color value indicating the color of all data points, or a
+vector of values of the same length as \code{lat} indicating color of each point.}
 
-\item{arcs}{Optional four-column data frame specifying arcs to plot. The columns of the data frame, in order, must indicate the starting latitude, starting longitude, ending latitude, and ending longitude.}
+\item{arcs}{Optional four-column data frame specifying arcs to plot. The columns of the data frame,
+in order, must indicate the starting latitude, starting longitude, ending latitude, and ending longitude.}
 
-\item{arcsColor}{Either a single color value indicating the color of all arcs, or a vector of values of the same length as the number of rows of \code{arcs}.}
+\item{arcsColor}{Either a single color value indicating the color of all arcs, or a vector of values
+of the same length as the number of rows of \code{arcs}.}
 
 \item{arcsHeight}{A single value between 0 and 1 controlling the height above the globe of each arc.}
 
-\item{arcsLwd}{Either a single value indicating the line width of all arcs, or a vector of values of the same length as the number of rows of \code{arcs}.}
+\item{arcsLwd}{Either a single value indicating the line width of all arcs, or a vector of values of
+the same length as the number of rows of \code{arcs}.}
 
 \item{arcsOpacity}{A single value between 0 and 1 indicating the opacity of all arcs.}
 
@@ -76,7 +83,7 @@ solar system, and are also easily generated directly in R
 }
 Specify colors with standard color names or hex color representations.
 The default values (well-suited to many earth-like map images) are
-\code{lightcolor = "#aaeeff"}, \code{emissive = "#0000ff"}, and \code{bodycolor = "#0000ff"}.
+\code{lightcolor = "#aaeeff"}, \code{emissive = "#000000"}, and \code{bodycolor = "#ffffff"}.
 Larger \code{fov} values result in a smaller (zoomed out) globe.
 The latitude and longitude rotation values are relative to the center of
 the map image. Their default values of zero radians result in the front of the
@@ -100,10 +107,11 @@ frequent_flights <- flights[idx, ]
 ll <- unique(frequent_flights[,3:4])
 # Plot frequent destinations as bars, and the flights to and from
 # them as arcs. Adjust arc width and color by frequency.
-globejs(lat=ll[,1], long=ll[,2], arcs=frequent_flights,
+globejs(lat=ll[,1], long=ll[,2], arcs=frequent_flights, bodycolor="#aaaaff",
         arcsHeight=0.3, arcsLwd=2, arcsColor="#ffff00", arcsOpacity=0.15,
         atmosphere=TRUE, color="#00aaff", pointsize=0.5)
 
+\dontrun{
 # Plot populous world cities from the maps package.
 library(threejs)
 library(maps)
@@ -115,15 +123,9 @@ globejs(lat=cities$lat, long=cities$long, value=value, color=col, atmosphere=TRU
 
 # Plot the data on the moon:
 moon <- system.file("images/moon.jpg", package="threejs")
-globejs(img=moon, bodycolor="#555555", emissive="#444444",
-         lightcolor="#555555", lat=cities$lat, long=cities$long,
-         value=value, color=col)
-
-\dontrun{
-# Plot a high-resolution NASA MODIS globe, setting colors to more closely reproduce
-# the natural image colors. Note that this example can can take a while to download!
-globejs("http://goo.gl/GVjxJ",
-        emmisive="#000000", bodycolor="#000000", lightcolor="#aaaa44")
+globejs(img=moon, bodycolor="#555555", lightcolor="#aaaaaa",
+        lat=cities$lat, long=cities$long,
+        value=value, color=col)
 
 # Using global plots from the maptools, rworldmap, or sp packages.
 
@@ -164,8 +166,5 @@ The three.js project \url{http://threejs.org}.
 
 An excellent overview of available map coordinate reference systems (PDF):
 \url{https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf}
-
-Includes images adapted from the NASA Earth Observatory and NASA Jet Propulsion Laboratory.
-World image link: \url{http://goo.gl/GVjxJ}.
 }
 

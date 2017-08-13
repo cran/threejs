@@ -1,270 +1,318 @@
-#' Interactive 3D Force-directed Graphs
+#' Interactive 3D Graph Visualization
 #'
-#' Plot interactive force-directed graphs.
+#' Make interactive 3D plots of \code{\link{igraph}} objects.
 #'
-#' @param edges Either a list with \code{edges} and \code{nodes} data frames as described below,
-#' or a graph object produced from the \code{igraph} package (see \code{\link{igraph2graphjs}}),
-#' or an edge data frame with at least columns:
-#'   \itemize{
-#'     \item \code{from} Integer node id identifying edge 'from' node
-#'     \item \code{to} Integer node id identifying the edge 'to' node
-#'     \item \code{size} Nonnegative numeric edge line width
-#'     \item \code{color} Edge color specified like node color above
-#'   }
-#' Each row of the data frame identifies a graph edge.
-#' @param nodes Optional node (vertex) data frame with at least columns:
+#' @param g an \code{\link{igraph}} graph object or a list of \code{igraph} objects (see notes)
+#' @param layout optional graph layout or list of layouts (see notes)
+#' @param vertex.color optional vertex color or vector of colors as long as the number of vertices in \code{g}
+#' @param vertex.size optional vertex size or vector of sizes
+#' @param vertex.shape optional vertex shape or vector of shapes
+#' @param vertex.label optional mouse-over vertex label or vector of labels
+#' @param edge.color optional edge color or vector of colors as long as the number of edges in \code{g}
+#' @param edge.width optional edge width (single scalar value, see notes)
+#' @param edge.alpha optional single numeric edge transparency value
+#' @param main plot title text
+#' @param bg plot background color
+#' @param width the widget container \code{div} width in pixels
+#' @param height the widget container \code{div} height in pixels
+#' @param ... optional additional arguments passed to \code{\link{scatterplot3js}}
+#'
+#' @section Interacting with the plot:
+#' Press and hold the left mouse button, or touch or trackpad equivalent, and move
+#' the mouse to rotate the plot. Press and hold the right mouse button
+#' to pan. Use the mouse scroll wheel to zoom.
+#' If \code{vertex.label}s are specified (see below), moving the mouse pointer over
+#' a point will display the label. Altenatively use \code{vertex.shape} to plot
+#' character names as shown in the examples below.
+#' Set the optional experimental \code{use.orbitcontrols=TRUE} argument to
+#' use a more CPU-efficient but somewhat less fluid mouse/touch interface.
+#'
+#' @section Layout options:
+#' Use the \code{layout} parameter to control the visualization layout by supplying
+#' either a three-column matrix of vertex \code{x, y, z} coordinates, or a function
+#' that returns such a layout. The igraph \code{\link{layout_with_fr}} force-directed
+#' layout is used by default (note that only 3D layouts are supported). Also see
+#' the animation section below.
+#'
+#' @section Vertex options:
+#' Optional parameters beginning with \code{vertex.} represent a subset of the igraph package
+#' vertex visualization options and work similarly, see \code{link{igraph.plotting}}.
+#' Vertex shapes in \code{graphjs} act somewhat differently, and are mapped to the
+#' \code{pch} option in \code{\link{scatterplot3js}}. In particular, \code{pch}
+#' character symbols or even short text strings may be specified. The \code{vertex.label}
+#' option enables a mouse-over label display instead of plotting lables directly near the vertices.
+#' (Consider using the text \code{pch} options for that instead.)
+#'
+#' @section Edge options:
+#' Optional parameters beginning with \code{edge.} represent a subset of the igraph
+#' edge visualization options and work similarly as the \code{vertex.} options above.
+#' The current version of the package only supports uniform edge widths specified by
+#' a single scalar value. This choice was made for performance reasons to support large
+#' visualizations.
+#'
+#' @section Graph animation:
+#' Specifying a list of three-column layout matrices in \code{layout} displays
+#' a linear interpolation from one layout to the next, providing a simple mechanism
+#' for graph animation. Each layout must have the same number of rows as the number
+#' of vertices in the graph.
+#'
+#' Specify the optional \code{fpl} (frames per layout) parameter to control the
+#' number of interpolating animation frames between layouts. See the examples.
+#'
+#' Optionally specify a list of graph objects in \code{g} to vary the displayed edges
+#' and edge colors from one layout to the next, with the restriction that each graph
+#' object must refer to a uniform number of vertices.
+#'
+#' The lists of graphs may optionally include varying vertex and edge colors.
+#' Alternatively, specify a list of \code{vertex.color} vectors (one
+#' for each layout) to animate vertex colors. Similarly, optionally specify a
+#' list of \code{edge.color} vectors to animate edge colors.
+#'
+#' Optionally provide a list of \code{main} title text strings to vary the
+#' title with each animation layout.
+#'
+#' None of the other plot parameters may be animated.
+#'
+#' @section Click animation:
+#' Specify the option \code{click=list} to animate the graph when specified vertices
+#' are clicked interactively, where \code{list} is a named list of animation entries.
+#' Each entry must itself be a list with the following entries
 #' \itemize{
-#'   \item \code{label} Node character labels
-#'   \item \code{id}    Unique integer node ids (corresponding to node ids used by \code{edges})
-#'   \item \code{size}  Positive numeric node plot size
-#'   \item \code{color} A character color value, either color names ("blue", "red", ...) or 3-digit hexadecimal values ("#0000FF", "#EE0011")
+#' \item{g}{ optional a single igraph object with the same number of vertices
+#'    as \code{g} above (if specified this must be the first entry)}
+#' \item{layout}{ - optional a single igraph layout, or differential layout if \code{cumulative=TRUE}}
+#' \item{vertex.color}{ - optional single vector of vertex colors}
+#' \item{edge.color}{ - optional single vector of edge colors}
+#' \item{cumulative}{ - optional boolean entry, if \code{TRUE} then vertex positions are
+#'   added to current plot, default is \code{FALSE}}
 #' }
-#' Each row of the data frame defines a graph node. If the \code{nodes} argument is missing it will be
-#' inferred from the \code{edges} argument.
-#' @param main Plot title
-#' @param curvature Zero implies that edges are straight lines. Specify a positive number to curve the edges, useful to distinguish multiple edges in directed graphs (the z-axis of the curve depends on the sign of \code{edge$from - edge$to}). Larger numbers = more curvature, with 1 a usually reasonable value.
-#' @param bg Plot background color specified similarly to the node colors described above
-#' @param fg Plot foreground text color
-#' @param showLabels If \code{TRUE} then display text labels near each node
-#' @param attraction Numeric value specifying attraction of connected nodes to each other, larger values indicate more attraction
-#' @param repulsion Numeric value specifying repulsion of all nodes to each other, larger values indicate greater repulsion
-#' @param max_iterations Integer value specifying the maximum number of rendering iterations before stopping
-#' @param opacity Node transparency, 0 <= opacity <= 1
-#' @param stroke If TRUE, stroke each node with a black circle
-#' @param width optional widget width
-#' @param height optional widget height
+#' At least one of \code{g} or \code{layout} must be specified in each animation list entry.
+#' The layouts and colors may be alternatively imbedded in the igraph object itself.
+#' Each animation list entry must be named by a number corresponding to the vertex
+#' enumeration in \code{g}. An animation sequence is triggered when a corresponding
+#' vertex is clicked. For instance, to trigger animations when vertices number 1 or 5 are
+#' clicked, include list entries labeled \code{"1"} and \code{"5"}.
+#' See the demos in \code{demo(package="threejs")} for detailed examples.
 #'
-#' @note All colors must be specified as color names like "red", "blue", etc. or
-#' as hexadecimal color values without opacity channel, for example "#FF0000", "#0a3e55"
-#' (upper or lower case hex digits are allowed).
+#' @section Other interactions:
+#' Specify the argument \code{brush=TRUE} to highlight a clicked vertex and
+#' its directly connected edges (click off of a vertex to reset the display).
+#' Optionally set the \code{highlight=<hex color>} and \code{lowlight=<hex color>}
+#' to manually control the brushing display colors.
 #'
-#' The plot responds to the following mouse controls (touch analogs may also be
-#' supported on some systems):
-#' \itemize{
-#' \item  \code{scrollwheel} zoom
-#' \item  \code{left-mouse button + move} rotate
-#' \item  \code{right-mouse button + move} pan
-#' \item  \code{mouse over} identify node by appending its label to the title
-#' }
-#' Double-click or tap on the plot to reset the view.
+#' @section Crosstalk:
+#' \code{graphjs()} works with
+#' crosstalk selection (but not filtering yet); see https://rstudio.github.io/crosstalk/.
+#' Enable crosstalk by supplying the optional agrument \code{crosstalk=df}, where \code{df} is a
+#' crosstalk-SharedData data.frame-like object with the same number of rows as graph vertices
+#' (see the examples).
 #'
-#' Basic support for plotting \code{igraph} objects is provided by the
-#' \code{\link{igraph2graphjs}} function.
+#' @note
+#' Edge transparency values specified as part of \code{edge.color} are ignored, however
+#' you can set an overall transparency for edges with \code{edge.alpha}.
+#'
 #' @return
 #' An htmlwidget object that is displayed using the object's show or print method.
-#' (If you don't see your widget plot, try printing it with the \code{print}) function.
+#' (If you don't see your widget plot, try printing it with the \code{print} function.)
 #'
-#' @seealso \code{\link{LeMis}}
+#' @seealso \code{\link{igraph.plotting}}, \code{\link{scatterplot3js}}
+#'
 #' @references
-#' Original code by David Piegza: \url{https://github.com/davidpiegza/Graph-Visualization}.
-#'
 #' The three.js project \url{http://threejs.org}.
-#' @examples
-#' data(LeMis)
-#' g <- graphjs(LeMis, main="Les Mis&eacute;rables", showLabels=TRUE)
-#' print(g)
 #'
-#' \dontrun{
-#' # The next example uses the `igraph` package.
-#' library(igraph)
+#' @examples
 #' set.seed(1)
 #' g <- sample_islands(3, 10, 5/10, 1)
 #' i <- cluster_optimal(g)
-#' g <- set_vertex_attr(g, "color", value=c("yellow", "green", "blue")[i$membership])
-#' print(graphjs(g))
+#' (graphjs(g, vertex.color=c("orange", "green", "blue")[i$membership], vertex.shape="sphere"))
+#'
+#' # Les Miserables Character Co-appearance Data
+#' data("LeMis")
+#' (graphjs(LeMis))
+#'
+#' # ...plot Character names
+#' (graphjs(LeMis, vertex.shape=V(LeMis)$label))
+#'
+#' # SNAP Facebook ego network dataset
+#' data("ego")
+#' (graphjs(ego, bg="black"))
+#'
+#' \dontrun{
+#' # A shiny example
+#' shiny::runApp(system.file("examples/graph", package="threejs"))
+#'
+#' # A graph amination that shows several layouts
+#' data("LeMis")
+#' graphjs(LeMis,
+#'   layout=list(
+#'     layout_randomly(LeMis, dim=3),
+#'     layout_on_sphere(LeMis),
+#'     layout_with_drl(LeMis, dim=3),  # note! somewhat slow...
+#'     layout_with_fr(LeMis, dim=3, niter=30)),
+#'   main=list("random layout", "sphere layout", "drl layout", "fr layout"),
+#'   fpl=300)
+#'
+#' # A simple graph animation illustrating edge modification
+#' g <- make_ring(5) - edges(1:5)
+#' graph_list <- list(
+#'  g + edge(1, 2),
+#'  g + edge(1, 2) + edge(2, 3),
+#'  g + edge(1, 2) + edge(2, 3) + edge(3, 4),
+#'  g + edge(1, 2) + edge(2, 3) + edge(3, 4) + edge(4, 5),
+#'  g + edge(1, 2) + edge(2, 3) + edge(3, 4) + edge(4, 5) + edge(5, 1))
+#'  graphjs(graph_list, main=paste(1:5),
+#'    vertex.color=rainbow(5), vertex.shape="sphere", edge.width=3)
+#'
+#' # see `demo(package="threejs") for more animation demos.
+#'
+#' # A crosstalk example
+#' library(crosstalk)
+#' library(DT)
+#' data(LeMis)
+#' sd = SharedData$new(data.frame(Name = V(LeMis)$label))
+#' print(bscols(
+#'   graphjs(LeMis, brush=TRUE, crosstalk=sd),
+#'   datatable(sd, rownames=FALSE, options=list(dom='tp'))
+#' ))
 #' }
-#' @importFrom jsonlite toJSON
-#' @importFrom methods slotNames
+#'
+#' @importFrom igraph layout_with_fr norm_coords V E as_edgelist
 #' @export
-graphjs <- function(edges, nodes, main="", curvature=0, bg="white", fg="black", showLabels=FALSE,
-                    attraction=1, repulsion=1, max_iterations=1500, opacity = 1, stroke=TRUE, width=NULL, height=NULL)
+graphjs <- function(g, layout,
+                    vertex.color, vertex.size, vertex.shape, vertex.label,
+                    edge.color, edge.width, edge.alpha,
+                    main="", bg="white",
+                    width=NULL, height=NULL, ...)
 {
-  # check input
-  if("igraph" %in% class(edges))
+  # Check for package version < 0.3.0 options
+  warn_upgrade <- FALSE
+  nodes <- list(...)$nodes
+  edges <- list(...)$edges
+  if(! missing(g) && is.list(g) && is.data.frame(g[[1]]) && "edges" %in% names(g))
   {
-    ig = igraph2graphjs(edges)
-    nodes = ig$nodes
-    edges = ig$edges
+    warn_upgrade <- TRUE
+    edges <- g$edges
+    nodes <- g$nodes
   }
-  if(!is.data.frame(edges))
+  if(! missing(g) && is.data.frame(g))
   {
-    if(is.list(edges))
-    {
-      nodes = edges[["nodes"]]
-      edges = edges[["edges"]]
-    } else stop("edges must be either a list, igraph object or data frame, see help('graphjs')")
+    warn_upgrade <- TRUE
+    edges <- g
   }
-  if(is.null(edges$size)) edges$size = 1
-  if(is.null(edges$color)) edges$color = "lightgray"
-  if(!all(c("from", "size", "to", "color") %in% names(edges)))
-    stop("The edges data frame must contain 'from', 'to' variables")
-  if (missing(nodes))
+  if(! missing(layout) && is.data.frame(layout))
   {
-    nodes = data.frame(id=unique(c(edges$from, edges$to)), size=1, color="orange", stringsAsFactors=FALSE)
-    nodes$label = nodes$id
+    warn_upgrade <- TRUE
+    nodes <- layout
+    layout <- function(x) layout_with_fr(x, dim=3)
   }
-  if(is.null(nodes$label)) nodes$label = nodes$id
-  if(is.null(nodes$size)) nodes$size = 1
-  if(is.null(nodes$color)) nodes$color = "orange"
-  if(!all(c("id", "size", "label", "color") %in% names(nodes)))
-    stop("The nodes data frame must contain 'id', 'size', 'label', and 'color' variables")
+  if(! is.null(edges))
+  {
+    warn_upgrade <- TRUE
+    if(! missing(g) && "color" %in% names(g)) edge.color <- g$color
+    g <- igraph::graph_from_data_frame(edges[, 1:2])
+    igraph::V(g)$color <- "orange"
+  }
+  if(! is.null(nodes))
+  {
+    warn_upgrade <- TRUE
+    nodes <- nodes[order(nodes$id), ]
+    igraph::V(g)$name <- nodes$label
+    vertex.label <- nodes$label
+    vertex.size <- nodes$size
+    vertex.color <- nodes$color
+  }
+  tryCatch(rm(list=c("nodes", "edges")), warning=invisible)
+  if(warn_upgrade)
+  {
+    warning("Please upgrade to the new graphjs() interface in version >= 0.3.0 of the threejs package.\n  See ?graphjs for help.")
+  }
 
-  stroke = switch(as.character(stroke), "TRUE"="black", "white")
+  # check for list of graphs (edge animation)
+  if (is.list(g) && "igraph" %in% class(g[[1]]))
+  {
+    from <- lapply(g, as_edgelist, names=FALSE)
+    to   <- lapply(from, function(x) x[, 2])
+    from <- lapply(from, function(x) x[, 1])
+    if (missing(edge.color)) edge.color <- lapply(g, function(x) {
+      ifel(is.null(E(x)$color), NA, E(x)$color)
+    })
+    if (missing(layout)) layout <- lapply(g, function(x) {
+      ifel(is.null(x$layout), layout_with_fr(x, dim=3, niter=50), x$layout)
+    })
+    else if (is.function(layout)) layout <- lapply(g, layout)
+    else if (!is.list(layout)) layout <- list(layout)
+    if (missing(vertex.color)) vertex.color <- lapply(g, function(x) ifel(is.null(V(x)$color), "orange", V(x)$color))
+    g <- g[[1]]
+  } else # single plot
+  {
+    if (!("igraph" %in% class(g))) stop("g must be an igraph object")
+    from <- as_edgelist(g, names=FALSE)
+    to   <- from[, 2]
+    from <- from[, 1]
+    if (missing(layout)) layout <- list(ifel(is.null(g$layout), layout_with_fr(g, dim=3, niter=50), g$layout))
+    else if (is.function(layout)) layout <- list(layout(g))
+    else if (!is.list(layout)) layout <- list(layout)
+    if (missing(vertex.color)) vertex.color <- list(ifel(is.null(V(g)$color), "orange", V(g)$color))
+    if (missing(edge.color)) edge.color <- ifel(is.null(E(g)$color), NA, E(g)$color)
+  }
+  # other options
+  if (missing(vertex.size)) vertex.size <- ifel(is.null(V(g)$size), 2, V(g)$size / 7)
+  if (missing(vertex.shape)) vertex.shape <- ifel(is.null(V(g)$shape), "circle", V(g)$shape)
+  if (missing(vertex.label)) vertex.label <- ifel(is.null(V(g)$label), NA, V(g)$label)
+  if (missing(edge.width)) edge.width <- ifel(is.null(E(g)$width), 1, E(g)$width)
+  if (length(edge.width) > 1)
+  {
+    warning("mulitple edge widths not yet supported")
+    edge.width <- edge.width[1]
+  }
+  if (missing(edge.alpha))
+  {
+    if (length(E(g)) > 1000) edge.alpha <- 0.3
+    else edge.alpha <- 1
+    if (!is.null(E(g)$alpha)) edge.alpha <- E(g)$alpha
+  }
 
-  # create widget
-  x = list(nodes=nodes,
-           edges=edges,
-           main=main,
-           bg=bg,
-           fg=fg,
-           showLabels=showLabels,
-           attraction=attraction,
-           repulsion=repulsion,
-           iterations=max_iterations,
-           curvature=curvature,
-           opacity=opacity,
-           stroke=stroke)
-  ans = htmlwidgets::createWidget(
-          name = "graph",
-          x = toJSON(x, auto_unbox=TRUE),
+  # normalize coordinates
+  layout <- Map(norm_coords, layout)
+
+  if (!is.list(main)) main <- as.list(main)
+
+  # map options to scatterplot3js options
+  pch <- gsub("circle", "@", vertex.shape)
+  u <- unique(vertex.shape)
+  if ("pie" %in% u) pch <- gsub("pie", "@", pch)
+  if ("sphere" %in% u) pch <- gsub("sphere", "o", pch)
+  if ("square" %in% u) pch <- gsub("square", ".", pch)
+  if ("csquare" %in% u) pch <- gsub("csquare", ".", pch)
+  if ("rectangle" %in% u) pch <- gsub("rectangle", ".", pch)
+  if ("crectangle" %in% u) pch <- gsub("crectangle", ".", pch)
+  if ("vrectangle" %in% u) pch <- gsub("vrectangle", ".", pch)
+  opts <- list(...)
+  names(opts)[names(opts) == "vertex.alpha"] <- "alpha" # rename for scatterplot3js
+
+  # click animation
+  if ("click" %in% names(opts))
+  {
+    opts$click <- lapply(opts$click, gopts)
+    names(opts$click) <- paste(as.integer(names(opts$click)) - 1)
+  }
+
+  options <- c(list(x=layout, pch=pch, size=vertex.size, color=vertex.color, from=from, to=to,
+                    lwd=edge.width, linealpha=edge.alpha, axis=FALSE, grid=FALSE, center=TRUE,
+                    bg=bg, main=main, xlim=c(-1, 1), ylim=c(-1, 1), zlim=c(-1, 1)), opts)
+  if (!all(unlist(Map(is.na, edge.color)))) options$lcol <- edge.color
+  if (!(length(vertex.label) == 1 && is.na(vertex.label))) options$labels <- vertex.label
+  options$options <- TRUE
+  opt <- do.call("scatterplot3js", args=options)
+  ans <- htmlwidgets::createWidget(
+          name = "scatterplotThree",
+          x = opt,
           width = width,
           height = height,
           htmlwidgets::sizingPolicy(padding = 0, browser.fill = TRUE),
+          dependencies = crosstalk::crosstalkLibs(),
           package = "threejs")
+  ans$call <- match.call()
+  ans$vcache <- layout
   ans
-}
-
-#' @rdname threejs-shiny
-#' @export
-graphOutput = function(outputId, width = "100%", height = "500px") {
-    shinyWidgetOutput(outputId, "graph", width, height,
-                        package = "threejs")
-}
-
-#' @rdname threejs-shiny
-#' @export
-renderGraph = function(expr, env = parent.frame(), quoted = FALSE) {
-    if (!quoted) {
-      expr <- substitute(expr)
-    } # force quoted
-    shinyRenderWidget(expr, graphOutput, env, quoted = TRUE)
-}
-
-#' Convert from node and edge graph representation to a sparse adjacency matrix representation
-#'
-#' @param edges A data frame with at least the columns "from" and "to"
-#' referring to edges between ids in the \code{nodes} data frame. If the data
-#' frame includes a numeric "size" variable then graph is assumed to be weighted
-#' and the corresponding matrix entries are set to the size values.
-#' @param nodes Optional data frame with at least a column named "id"
-#' corresponding to the \code{from} and \code{to} node ids in the \code{edges}
-#' argument. The size of the matrix is determined by  number of rows in the data
-#' frame. If \code{nodes} is missing it will be inferred from the \code{edges}. If
-#' \code{nodes} has a "label" column, the matrix row and column names will be set
-#' to the corresponding node labels.
-#' @param symmetric Set to \code{FALSE} for directed graphs, or leave as \code{TRUE} for undirected graphs.
-#' @return A sparse matrix
-#' @seealso \code{\link{graphjs}}, \code{\link{graph2Matrix}}
-#' @importFrom Matrix sparseMatrix
-#' @examples
-#' data(LeMis)
-#' M <- graph2Matrix(LeMis$edges, LeMis$nodes)
-#' G <- matrix2graph(M)
-#' @export
-graph2Matrix = function(edges, nodes, symmetric=TRUE)
-{
-  if (!is.data.frame(edges) || !(c("from", "to") %in% names(edges)))
-    stop("edges must be a data frame with 'from' and 'to' columns")
-  if (missing(nodes))
-  {
-    nodes = data.frame(id=unique(c(edges$from, edges$to)))
-  }
-  if (symmetric)
-  {
-    # Enforce ordering edges$from <= edges$to
-    idx = edges[,"from"] > edges[,"to"]
-    if(any(idx))
-    {
-      x = edges[idx, "from"]
-      edges[idx, "from"] = edges[idx, "to"]
-      edges[idx, "to"] = x
-    }
-  }
-  N  = nrow(nodes)
-  id = seq(1, N)
-  x = 1
-  if (!is.null(edges$size) && is.numeric(edges$size)) x = edges$size
-  names(id) = nodes[,"id"]
-  M = sparseMatrix(i=id[as.character(edges$from)], j=id[as.character(edges$to)], x=x, dims=c(N, N), symmetric=symmetric)
-  if(!is.null(nodes$label)) colnames(M) = rownames(M) = nodes$label
-  M
-}
-
-#' Convert a matrix or column-sparse matrix to a list of edges and nodes for
-#' use by \code{\link{graphjs}}.
-#' @param M either a matrix or any of the possible column sparse matrix objects from the \link{Matrix} package.
-#' @return A list with node and edges data frame entries used by \code{\link{graphjs}}.
-#' @note Numeric graphs are assumed to be weighted and the edge "size" values are set to the corresponding matrix entries.
-#' @seealso \code{\link{graphjs}}, \code{\link{graph2Matrix}}
-#' @importFrom Matrix Matrix
-#' @examples
-#' data(LeMis)
-#' M <- graph2Matrix(LeMis$edges, LeMis$nodes)
-#' G <- matrix2graph(M)
-#' @export
-matrix2graph = function(M)
-{
-  M = Matrix(M)
-  if(!any(grepl("CMatrix", class(M)))) stop("M must be a matrix or CsparseMatrix object")
-  n = nrow(M)
-  size = 1
-  if("x" %in% slotNames(M)) size = as.numeric(M@x)
-  nodes = data.frame(id=1:n, label=1:n, size=1, color="orange")
-  if(!is.null(colnames(M))) nodes$label = colnames(M)
-  dp = diff(M@p)
-  edges = data.frame(from=M@i + 1, to=rep(seq_along(dp), dp), size=size, color="lightgray")
-  list(nodes=nodes, edges=edges)
-}
-
-
-#' Convert \code{igraph} graph objects to a simpler form used by \code{\link{graphjs}}
-#' @param ig A graph object from \code{igraph}
-#' @return A list with node and edges data frame entries used by \code{\link{graphjs}}.
-#' @export
-#' @examples
-#' \dontrun{
-#'   library(igraph)
-#'   g <- make_ring(10) %>%
-#'        set_edge_attr("weight", value = 1:10) %>%
-#'        set_edge_attr("color", value = "red") %>%
-#'        set_vertex_attr("name", value = letters[1:10])
-#'   (G <- igraph2graphjs(g))
-#'
-#'   # Can also directly run:
-#'   graphjs(g)
-#' }
-igraph2graphjs = function(ig)
-{
-  E = igraph::as_edgelist(ig)
-  nodes = data.frame(id=1:igraph::vcount(ig))
-  vattr = data.frame(igraph::vertex_attr(ig), stringsAsFactors=FALSE)
-  if(length(vattr) > 0 && nrow(vattr) == nrow(nodes)) nodes = cbind(nodes, vattr)
-  nv = names(nodes)
-  nv[which(nv %in% "name")] = "label"
-  names(nodes) = nv
-  if(!is.numeric(E))
-  {
-    if(is.null(nodes$label)) stop("can't determine edge list")
-    n = nodes$id
-    names(n) = nodes$label
-    E = cbind(n[E[, 1]], n[E[, 2]])
-  }
-  edges = data.frame(from=E[,1], to=E[,2], stringAsFactors=FALSE)
-  eattr = data.frame(igraph::edge_attr(ig), stringsAsFactors=FALSE)
-  if(length(eattr) > 0 && nrow(eattr) == nrow(edges)) edges = cbind(edges, eattr)
-  # adjust variable names as required
-  ne = names(edges)
-  ne[which(ne %in% c("weight", "width"))] = "size"
-  names(edges) = ne
-  list(edges=edges, nodes=nodes)
 }

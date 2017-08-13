@@ -4,13 +4,20 @@
 #' can be rotated and and zoomed.
 #'
 #' @param img A character string representing a file path or URI of an image to plot on the globe surface.
-#' @param lat Optional data point decimal latitudes, must be of same length as \code{long} (negative values indicate south, positive north).
-#' @param long Optional data point decimal longitudes, must be of same length as \code{lat} (negative values indicate west, positive east).
-#' @param color Either a single color value indicating the color of all data points, or a vector of values of the same length as \code{lat} indicating color of each point.
-#' @param value Either a single value indicating the height of all data points, or a vector of values of the same length as \code{lat} indicating height of each point.
-#' @param arcs Optional four-column data frame specifying arcs to plot. The columns of the data frame, in order, must indicate the starting latitude, starting longitude, ending latitude, and ending longitude.
-#' @param arcsColor Either a single color value indicating the color of all arcs, or a vector of values of the same length as the number of rows of \code{arcs}.
-#' @param arcsLwd Either a single value indicating the line width of all arcs, or a vector of values of the same length as the number of rows of \code{arcs}.
+#' @param lat Optional data point decimal latitudes, must be of same length as \code{long}
+#'   (negative values indicate south, positive north).
+#' @param long Optional data point decimal longitudes, must be of same length as \code{lat}
+#'   (negative values indicate west, positive east).
+#' @param color Either a single color value indicating the color of all data points, or a
+#'   vector of values of the same length as \code{lat} indicating color of each point.
+#' @param value Either a single value indicating the height of all data points, or a vector of
+#'    values of the same length as \code{lat} indicating height of each point.
+#' @param arcs Optional four-column data frame specifying arcs to plot. The columns of the data frame,
+#'    in order, must indicate the starting latitude, starting longitude, ending latitude, and ending longitude.
+#' @param arcsColor Either a single color value indicating the color of all arcs, or a vector of values
+#'   of the same length as the number of rows of \code{arcs}.
+#' @param arcsLwd Either a single value indicating the line width of all arcs, or a vector of values of
+#'   the same length as the number of rows of \code{arcs}.
 #' @param arcsHeight A single value between 0 and 1 controlling the height above the globe of each arc.
 #' @param arcsOpacity A single value between 0 and 1 indicating the opacity of all arcs.
 #' @param atmosphere TRUE enables WebGL atmpsphere effect.
@@ -50,7 +57,7 @@
 #' }
 #' Specify colors with standard color names or hex color representations.
 #' The default values (well-suited to many earth-like map images) are
-#' \code{lightcolor = "#aaeeff"}, \code{emissive = "#0000ff"}, and \code{bodycolor = "#0000ff"}.
+#' \code{lightcolor = "#aaeeff"}, \code{emissive = "#000000"}, and \code{bodycolor = "#ffffff"}.
 #' Larger \code{fov} values result in a smaller (zoomed out) globe.
 #' The latitude and longitude rotation values are relative to the center of
 #' the map image. Their default values of zero radians result in the front of the
@@ -63,9 +70,6 @@
 #'
 #' An excellent overview of available map coordinate reference systems (PDF):
 #' \url{https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf}
-#'
-#' Includes images adapted from the NASA Earth Observatory and NASA Jet Propulsion Laboratory.
-#' World image link: \url{http://goo.gl/GVjxJ}.
 #'
 #' @examples
 #' # Plot flights to frequent destinations from Callum Prentice's
@@ -85,10 +89,11 @@
 #' ll <- unique(frequent_flights[,3:4])
 #' # Plot frequent destinations as bars, and the flights to and from
 #' # them as arcs. Adjust arc width and color by frequency.
-#' globejs(lat=ll[,1], long=ll[,2], arcs=frequent_flights,
+#' globejs(lat=ll[,1], long=ll[,2], arcs=frequent_flights, bodycolor="#aaaaff",
 #'         arcsHeight=0.3, arcsLwd=2, arcsColor="#ffff00", arcsOpacity=0.15,
 #'         atmosphere=TRUE, color="#00aaff", pointsize=0.5)
 #'
+#' \dontrun{
 #' # Plot populous world cities from the maps package.
 #' library(threejs)
 #' library(maps)
@@ -100,15 +105,9 @@
 #'
 #' # Plot the data on the moon:
 #' moon <- system.file("images/moon.jpg", package="threejs")
-#' globejs(img=moon, bodycolor="#555555", emissive="#444444",
-#'          lightcolor="#555555", lat=cities$lat, long=cities$long,
-#'          value=value, color=col)
-#'
-#' \dontrun{
-#' # Plot a high-resolution NASA MODIS globe, setting colors to more closely reproduce
-#' # the natural image colors. Note that this example can can take a while to download!
-#' globejs("http://goo.gl/GVjxJ",
-#'         emmisive="#000000", bodycolor="#000000", lightcolor="#aaaa44")
+#' globejs(img=moon, bodycolor="#555555", lightcolor="#aaaaaa",
+#'         lat=cities$lat, long=cities$long,
+#'         value=value, color=col)
 #'
 #' # Using global plots from the maptools, rworldmap, or sp packages.
 #'
@@ -120,7 +119,7 @@
 #' library(maptools)
 #' library(threejs)
 #' data(wrld_simpl)
-#' 
+#'
 #' bgcolor <- "#000025"
 #' earth <- tempfile(fileext=".jpg")
 #'
@@ -140,7 +139,7 @@
 #' # A shiny example:
 #' shiny::runApp(system.file("examples/globe",package="threejs"))
 #' }
-#' 
+#'
 #' # See http://bwlewis.github.io/rthreejs for additional examples.
 #' @export
 globejs <- function(
@@ -158,67 +157,67 @@ globejs <- function(
   height = NULL,
   width = NULL, ...)
 {
-  if(missing(lat) || missing(long))
+  if (missing(lat) || missing(long))
   {
-    lat = NULL
-    long = NULL
+    lat <- NULL
+    long <- NULL
   }
   # Strip alpha channel from colors
-  i = grep("^#", color)
-  if(length(i) > 0)
+  i <- grep("^#", color)
+  if (length(i) > 0)
   {
-    j = nchar(color[i]) > 7
-    if(any(j))
+    j <- nchar(color[i]) > 7
+    if (any(j))
     {
-      color[i][j] = substr(color[i][j], 1, 7)
+      color[i][j] <- substr(color[i][j], 1, 7)
     }
   }
-  i = grep("^#", arcsColor)
-  if(length(i) > 0)
+  i <- grep("^#", arcsColor)
+  if (length(i) > 0)
   {
-    j = nchar(arcsColor[i]) > 7
-    if(any(j))
+    j <- nchar(arcsColor[i]) > 7
+    if (any(j))
     {
-      arcsColor[i][j] = substr(arcsColor[i][j], 1, 7)
+      arcsColor[i][j] <- substr(arcsColor[i][j], 1, 7)
     }
   }
-  i = grep("^#", bg)
-  if(length(i) > 0) bg = substr(bg, 1, 7)
-  if(missing(arcs))
-    arcs = NULL
+  i <- grep("^#", bg)
+  if (length(i) > 0) bg <- substr(bg, 1, 7)
+  if (missing(arcs))
+    arcs <- NULL
   else
   {
-    arcs = data.frame(arcs)
-    names(arcs) = c("fromlat", "fromlong", "tolat", "tolong")
+    arcs <- data.frame(arcs)
+    names(arcs) <- c("fromlat", "fromlong", "tolat", "tolong")
   }
-  arcsHeight = max(min(arcsHeight, 1), 0.2)
-  arcsOpacity = max(min(arcsOpacity, 1), 0)
+  arcsHeight <- max(min(arcsHeight, 1), 0.2)
+  arcsOpacity <- max(min(arcsOpacity, 1), 0)
 
-  options = list(lat=lat, long=long, color=color, arcsOpacity=arcsOpacity,
+  options <- list(lat=lat, long=long, color=color, arcsOpacity=arcsOpacity,
                  value=value, atmosphere=atmosphere, bg=bg, arcs=arcs,
                  arcsColor=arcsColor, arcsLwd=arcsLwd, arcsHeight=arcsHeight)
-  additional_args = list(...)
-  if(length(additional_args) > 0) options = c(options, additional_args)
+  additional_args <- list(...)
+  if (length(additional_args) > 0) options <- c(options, additional_args)
 # Clean up optional color arguments
-  if("bodycolor" %in% names(options))
+  if ("bodycolor" %in% names(options))
   {
-    i = grep("^#",options$bodycolor)
-    if(length(i) > 0) options$bodycolor = substr(options$bodycolor,1,7)
+    i <- grep("^#", options$bodycolor)
+    if (length(i) > 0) options$bodycolor <- substr(options$bodycolor, 1, 7)
   }
-  if("emissive" %in% names(options))
+  if ("emissive" %in% names(options))
   {
-    i = grep("^#",options$emissive)
-    if(length(i) > 0) options$emissive = substr(options$emissive,1,7)
+    i <- grep("^#", options$emissive)
+    if (length(i) > 0) options$emissive <- substr(options$emissive, 1, 7)
   }
-  if("lightcolor" %in% names(options))
+  if ("lightcolor" %in% names(options))
   {
-    i = grep("^#",options$lightcolor)
-    if(length(i) > 0) options$lightcolor = substr(options$lightcolor,1,7)
+    i <- grep("^#", options$lightcolor)
+    if (length(i) > 0) options$lightcolor <- substr(options$lightcolor, 1, 7)
   }
 
 # Convert image files to dataURI using the texture function
-  if (!is.list(img)) img = texture(img)
-  x = c(img, options)
+  if (!is.list(img)) img <- texture(img)
+  x <- c(img, options)
   htmlwidgets::createWidget(
       name = "globe",
       x = x,
@@ -239,7 +238,7 @@ globeOutput <- function(outputId, width = "100%", height = "600px") {
 #' @export
 renderGlobe <- function(expr, env = parent.frame(), quoted = FALSE) {
     if (!quoted) {
-      expr = substitute(expr)
+      expr <- substitute(expr)
     } # force quoted
     shinyRenderWidget(expr, globeOutput, env, quoted = TRUE)
 }

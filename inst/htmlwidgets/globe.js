@@ -60,6 +60,7 @@ HTMLWidgets.widget(
     var img, geometry, tex, earth;
     var down = false;
     var sx = 0, sy = 0;
+    tex = THREE.ImageUtils.loadTexture(x.img, {}, function() {render();});
 
     var vertexShader = [
     'uniform vec3 viewVector;',
@@ -94,8 +95,8 @@ HTMLWidgets.widget(
     }
 
     if(!x.lightcolor) x.lightcolor = 0xaaeeff;
-    if(!x.emissive) x.emissive = 0x0011ff;
-    if(!x.bodycolor) x.bodycolor = 0x0000ff;
+    if(!x.emissive) x.emissive = 0x000000;
+    if(!x.bodycolor) x.bodycolor = 0xffffff;
     if(!x.diameter) x.diameter = 200;
     if(!x.segments) x.segments = 50;
     if(!x.pointsize) x.pointsize = 1;
@@ -109,23 +110,12 @@ HTMLWidgets.widget(
     stuff.scene = new THREE.Scene();
     geometry = new THREE.SphereGeometry(x.diameter, x.segments, x.segments);
 
-    if(x.dataURI)
-    {
-      img = document.createElement("img");
-      img.src = x.img;
-      tex = new THREE.Texture();
-      tex.image = img;
-      tex.needsUpdate = true;
-    } else
-    {
-      tex = THREE.ImageUtils.loadTexture(x.img);
-    }
 
     var material = new THREE.MeshLambertMaterial({map: tex, color: x.bodycolor, emissive: x.emissive});
 
     earth = new THREE.Mesh( geometry, material );
     earth.position.x = earth.position.y = 0;
-    stuff.scene.add( earth );
+    stuff.scene.add(earth);
 
     stuff.camera = new THREE.PerspectiveCamera( x.fov, stuff.renderer.domElement.width / stuff.renderer.domElement.height, 1, 10000 );
     stuff.camera.position.x = 800*Math.sin(earth.rotation.x) * Math.cos(earth.rotation.y);
@@ -160,8 +150,10 @@ HTMLWidgets.widget(
     var group = new THREE.Geometry();
     if(x.lat != null)
     {
+      if(!Array.isArray(x.lat)) x.lat = [x.lat];
+      if(!Array.isArray(x.long)) x.long = [x.long];
       var phi, theta, lat, lng, colr, size;
-      var bg = new THREE.BoxGeometry(1,1,1);
+      var bg = new THREE.BoxGeometry(1, 1, 1);
       var bm = new THREE.MeshBasicMaterial({color: 0xffffff, vertexColors: THREE.FaceColors});
       var point;
 
@@ -174,9 +166,9 @@ HTMLWidgets.widget(
         else
           colr = new THREE.Color(x.color);
         if(Array.isArray(x.value))
-          size = parseInt(x.value[i]);
+          size = parseFloat(x.value[i]);
         else
-          size = parseInt(x.value);
+          size = parseFloat(x.value);
         phi = (90 - lat) * Math.PI / 180;
         theta = - lng * Math.PI / 180;
         var point = new THREE.Mesh(bg, bm);
@@ -187,14 +179,16 @@ HTMLWidgets.widget(
         point.scale.z = size;
         point.lookAt(earth.position);
         var j;
-        for (j = 0; j<point.geometry.faces.length; j++) {
+        for (j = 0; j < point.geometry.faces.length; j++) {
           point.geometry.faces[j].color = new THREE.Color(colr);
         }
-        THREE.GeometryUtils.merge(group,point);
+        point.updateMatrix();
+        group.merge(point.geometry, point.matrix);
       }
     }
     var points = new THREE.Mesh(group, bm);
     stuff.scene.add(points);
+
 
 // Add the arcs
     var arcs = new THREE.Object3D();
@@ -208,9 +202,9 @@ HTMLWidgets.widget(
         else
           colr = new THREE.Color(x.arcsColor);
         if(Array.isArray(x.arcsLwd))
-          size = parseInt(x.arcsLwd[i]);
+          size = parseFloat(x.arcsLwd[i]);
         else
-          size = parseInt(x.arcsLwd);
+          size = parseFloat(x.arcsLwd);
         phi1 = (90 - x.arcs.fromlat[i]) * Math.PI / 180;
         theta1 = - x.arcs.fromlong[i] * Math.PI / 180;
         phi2 = (90 - x.arcs.tolat[i]) * Math.PI / 180;
@@ -318,7 +312,7 @@ HTMLWidgets.widget(
     function render() {
       stuff.renderer.clear();
       stuff.camera.lookAt(stuff.scene.position);
-      stuff.renderer.render( stuff.scene, stuff.camera );
+      stuff.renderer.render(stuff.scene, stuff.camera);
     }
     render();
   }
