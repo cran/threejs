@@ -17,6 +17,8 @@ HTMLWidgets.widget(
   {
     obj.width = width;
     obj.height = height;
+    obj.widget.camera.aspect = obj.width / obj.height;
+    obj.widget.camera.updateProjectionMatrix();
     obj.widget.renderer.setSize(obj.width, obj.height);
     obj.widget.animate();
   },
@@ -73,6 +75,7 @@ HTMLWidgets.widget(
  * zlim
  * ztick
  * zticklab
+ * axislength  length of each axis (float[3])
  * top         optional infobox top position (int)
  * left        optional infobox left position (int)
  * fontmain    optional infobox css font
@@ -128,6 +131,7 @@ Widget.scatter = function(w, h)
 
     if(height > 0) _this.camera = new THREE.PerspectiveCamera(40, width / height, 1e-5, 100);
     else _this.camera = new THREE.PerspectiveCamera(40, 1, 1e-5, 100);
+
     _this.camera.position.z = 2.0;
     _this.camera.position.x = 2.5;
     _this.camera.position.y = 1.2;
@@ -174,6 +178,19 @@ Widget.scatter = function(w, h)
         _this.renderer.setSize(_this.width, _this.height);
         _this.controls.handleResize();
         _this.animate();
+       });
+
+      // ...and the same for bootstrap tabs
+      $('.nav-tabs a').on('shown.bs.tab', function(event){
+        if (event.target.hash == '#'+$(el).closest('.tab-pane')[0].id) {
+          _this.width = _this.el.offsetWidth;
+          _this.height = _this.el.offsetHeight;
+          _this.camera.aspect = _this.width / _this.height;
+          _this.camera.updateProjectionMatrix();
+          _this.renderer.setSize(_this.width, _this.height);
+          _this.controls.handleResize();
+          _this.animate();
+        }
        });
     }
 
@@ -551,7 +568,7 @@ Widget.scatter = function(w, h)
     } else if(x.color) {
       // only a single color specified
       var XC;
-      if(Array.isArray(x.color)) XC = "#" + new THREE.Color(x.color[0]).getHexString();
+      if(Array.isArray(x.color)) XC = new THREE.Color("#" + new THREE.Color(x.color[0]).getHexString());
       else XC = new THREE.Color(x.color);
       _this.datacolor = [];
       _this.datacolor.length = x.NROW;
@@ -610,15 +627,21 @@ Widget.scatter = function(w, h)
       if(!_this.fps) _this.fps = 200;           // default frames per scene
 
       // lights
-      /* FIXME add user-defined lights */
-      light = new THREE.DirectionalLight(0xffffff);
-      light.position.set(1, 1, 1);
-      scene.add(light);
-      light = new THREE.DirectionalLight(0x002255);
-      light.position.set(-1, -1, -1);
-      scene.add(light);
-      light = new THREE.AmbientLight(0x444444);
-      scene.add(light );
+      if(x.lights) {
+        for(var i = 0; i < x.lights.length; i++) {
+          if(x.lights[i].type == "ambient") {
+            var light = new THREE.AmbientLight(x.lights[i].color);
+            scene.add(light)
+          } else if(x.lights[i].type == "directional") {
+            var light = new THREE.DirectionalLight(x.lights[i].color);
+            light.position.set(x.lights[i].position[0], x.lights[i].position[1], x.lights[i].position[2]);
+            scene.add(light)
+          }
+        }
+      } else {
+        var light = new THREE.AmbientLight(0xa6a6a6);
+        scene.add(light );
+      }
 
       // Handle mupltiple kinds of glyphs
       /* FIXME avoid multiple data scans here and below (pre-sort by pch, for instance) */
@@ -733,9 +756,9 @@ Widget.scatter = function(w, h)
               k++;
             }
           }
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('color', new THREE.BufferAttribute(colors, 4));
-          geometry.addAttribute('size', new THREE.BufferAttribute(sizes, 1));
+          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
+          geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
           geometry.computeBoundingSphere();
 
           var material = new THREE.ShaderMaterial({
@@ -858,9 +881,9 @@ Widget.scatter = function(w, h)
       var xAxisGeo = new THREE.Geometry();
       var yAxisGeo = new THREE.Geometry();
       var zAxisGeo = new THREE.Geometry();
-      xAxisGeo.vertices.push(v(0, 0, 0), v(1, 0, 0));
-      yAxisGeo.vertices.push(v(0, 0, 0), v(0, 1, 0));
-      zAxisGeo.vertices.push(v(0, 0, 0), v(0, 0, 1));
+      xAxisGeo.vertices.push(v(0, 0, 0), v(x.axislength[0], 0, 0));
+      yAxisGeo.vertices.push(v(0, 0, 0), v(0, x.axislength[1], 0));
+      zAxisGeo.vertices.push(v(0, 0, 0), v(0, 0, x.axislength[2]));
       var xAxis = new THREE.Line(xAxisGeo, new THREE.LineBasicMaterial({color: axisColor, linewidth: 1}));
       var yAxis = new THREE.Line(yAxisGeo, new THREE.LineBasicMaterial({color: axisColor, linewidth: 1}));
       var zAxis = new THREE.Line(zAxisGeo, new THREE.LineBasicMaterial({color: axisColor, linewidth: 1}));
@@ -872,9 +895,10 @@ Widget.scatter = function(w, h)
       group.add(zAxis);
       if(x.axisLabels)
       {
-        addText(group, x.axisLabels[0], cexlab, 1.1, 0, 0, axisColor)
-        addText(group, x.axisLabels[1], cexlab, 0, 1.1, 0, axisColor)
-        addText(group, x.axisLabels[2], cexlab, 0, 0, 1.1, axisColor)
+        var dropOff = -0.08;
+        addText(group, x.axisLabels[0], cexlab, x.axislength[0] + .1, dropOff, dropOff, axisColor)
+        addText(group, x.axisLabels[1], cexlab, 0, x.axislength[1] + .1, 0, axisColor)
+        addText(group, x.axisLabels[2], cexlab, dropOff, dropOff, x.axislength[2] + .1, axisColor)
       }
 // Ticks and tick labels
       function tick(length, thickness, axis, ticks, ticklabels)
@@ -901,23 +925,30 @@ Widget.scatter = function(w, h)
     }
 
 // Grid
-    if(x.grid && x.xtick && x.ztick && x.xtick.length == x.ztick.length)
-    {
-      for(var j=1; j < x.xtick.length; j++)
+    function grid(ticks,axis,axislength) {
+      for(var j=1; j < ticks.length; j++)
       {
         var gridline = new THREE.Geometry();
-        gridline.vertices.push(v(x.xtick[j], 0, 0), v(x.xtick[j], 0, 1));
+        if(axis==0) {
+          gridline.vertices.push(v(ticks[j], 0, 0), v(ticks[j], 0, axislength[2]));
+        }
+        else if(axis==2) {
+          gridline.vertices.push(v(0,0,ticks[j]), v(axislength[0],0,ticks[j]));
+        }
         var gl = new THREE.Line(gridline, new THREE.LineBasicMaterial({color: tickColor, linewidth: 1}));
         gl.type = THREE.Lines;
         group.add(gl);
-        gridline = new THREE.Geometry();
-        gridline.vertices.push(v(0, 0, x.ztick[j]), v(1, 0, x.ztick[j]));
-        gl = new THREE.Line(gridline, new THREE.LineBasicMaterial({color: tickColor, linewidth: 1}));
-        gl.type=THREE.Lines;
-        group.add(gl);
-      }
+      }      
     }
-
+    if(x.grid && x.xtick)
+    {
+      grid(x.xtick,0,x.axislength);
+    }
+    if(x.grid && x.ztick)
+    {
+      grid(x.ztick,2,x.axislength);
+    }
+    
 // Lines
 /* Note that variable line widths are not directly supported by buffered geometry, see for instance:
  * http://stackoverflow.com/questions/32544413/buffergeometry-and-linebasicmaterial-segments-thickness
@@ -1080,8 +1111,8 @@ Widget.scatter = function(w, h)
       var geometry = new THREE.BufferGeometry();
       var positions = new Float32Array(maxlen * 6);
       var colors = new Float32Array(maxlen * 6);
-      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       geometry.computeBoundingSphere();
       var material = new THREE.LineBasicMaterial({vertexColors: THREE.VertexColors, linewidth: _this.options.lwd, opacity: _this.options.linealpha, transparent: true});
       var lines = new THREE.LineSegments(geometry, material);

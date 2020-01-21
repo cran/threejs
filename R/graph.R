@@ -15,6 +15,7 @@
 #' @param bg plot background color
 #' @param width the widget container \code{div} width in pixels
 #' @param height the widget container \code{div} height in pixels
+#' @param elementId Use an explicit element ID for the widget (rather than an automatically generated one). Useful if you have other JavaScript that needs to explicitly discover and interact with a specific widget instance.
 #' @param ... optional additional arguments passed to \code{\link{scatterplot3js}}
 #'
 #' @section Interacting with the plot:
@@ -123,8 +124,14 @@
 #' @examples
 #' set.seed(1)
 #' g <- sample_islands(3, 10, 5/10, 1)
-#' i <- cluster_optimal(g)
+#' i <- cluster_louvain(g)
 #' (graphjs(g, vertex.color=c("orange", "green", "blue")[i$membership], vertex.shape="sphere"))
+#'
+#' # similar example with user-defined directional lighting
+#' l1 = light_directional(color = "red", position = c(0, -0.8, 0.5))
+#' l2 = light_directional(color = "yellow", position = c(0, 0.8, -0.5))
+#' l3 = light_ambient(color = "#555555")
+#' (graphjs(g, vertex.color="gray", vertex.shape="sphere", lights=list(l1, l2, l3)))
 #'
 #' # Les Miserables Character Co-appearance Data
 #' data("LeMis")
@@ -182,53 +189,17 @@ graphjs <- function(g, layout,
                     vertex.color, vertex.size, vertex.shape, vertex.label,
                     edge.color, edge.width, edge.alpha,
                     main="", bg="white",
-                    width=NULL, height=NULL, ...)
+                    width=NULL, height=NULL,
+                    elementId=NULL,
+                    ...)
 {
-  # Check for package version < 0.3.0 options
-  warn_upgrade <- FALSE
-  nodes <- list(...)$nodes
-  edges <- list(...)$edges
-  if(! missing(g) && is.list(g) && is.data.frame(g[[1]]) && "edges" %in% names(g))
+  if(is.null(elementId))
   {
-    warn_upgrade <- TRUE
-    edges <- g$edges
-    nodes <- g$nodes
-  }
-  if(! missing(g) && is.data.frame(g))
-  {
-    warn_upgrade <- TRUE
-    edges <- g
-  }
-  if(! missing(layout) && is.data.frame(layout))
-  {
-    warn_upgrade <- TRUE
-    nodes <- layout
-    layout <- function(x) layout_with_fr(x, dim=3)
-  }
-  if(! is.null(edges))
-  {
-    warn_upgrade <- TRUE
-    if(! missing(g) && "color" %in% names(g)) edge.color <- g$color
-    g <- igraph::graph_from_data_frame(edges[, 1:2])
-    igraph::V(g)$color <- "orange"
-  }
-  if(! is.null(nodes))
-  {
-    warn_upgrade <- TRUE
-    nodes <- nodes[order(nodes$id), ]
-    igraph::V(g)$name <- nodes$label
-    vertex.label <- nodes$label
-    vertex.size <- nodes$size
-    vertex.color <- nodes$color
-  }
-  tryCatch(rm(list=c("nodes", "edges")), warning=invisible)
-  if(warn_upgrade)
-  {
-    warning("Please upgrade to the new graphjs() interface in version >= 0.3.0 of the threejs package.\n  See ?graphjs for help.")
+    elementId <- paste0(sample(c(letters, LETTERS, 0:9), 10, replace=TRUE), collapse="")
   }
 
   # check for list of graphs (edge animation)
-  if (is.list(g) && "igraph" %in% class(g[[1]]))
+  if (is.list(g) && inherits(g[[1]], "igraph"))
   {
     from <- lapply(g, as_edgelist, names=FALSE)
     to   <- lapply(from, function(x) x[, 2])
@@ -245,7 +216,7 @@ graphjs <- function(g, layout,
     g <- g[[1]]
   } else # single plot
   {
-    if (!("igraph" %in% class(g))) stop("g must be an igraph object")
+    if (!(inherits(g, "igraph"))) stop("g must be an igraph object")
     from <- as_edgelist(g, names=FALSE)
     to   <- from[, 2]
     from <- from[, 1]
@@ -299,7 +270,7 @@ graphjs <- function(g, layout,
 
   options <- c(list(x=layout, pch=pch, size=vertex.size, color=vertex.color, from=from, to=to,
                     lwd=edge.width, linealpha=edge.alpha, axis=FALSE, grid=FALSE, center=TRUE,
-                    bg=bg, main=main, xlim=c(-1, 1), ylim=c(-1, 1), zlim=c(-1, 1)), opts)
+                    bg=bg, main=main, xlim=c(-1, 1), ylim=c(-1, 1), zlim=c(-1, 1)), elementId=elementId, opts)
   if (!all(unlist(Map(is.na, edge.color)))) options$lcol <- edge.color
   if (!(length(vertex.label) == 1 && is.na(vertex.label))) options$labels <- vertex.label
   options$options <- TRUE
@@ -311,7 +282,8 @@ graphjs <- function(g, layout,
           height = height,
           htmlwidgets::sizingPolicy(padding = 0, browser.fill = TRUE),
           dependencies = crosstalk::crosstalkLibs(),
-          package = "threejs")
+          package = "threejs",
+          elementId = elementId)
   ans$call <- match.call()
   ans$vcache <- layout
   ans

@@ -14,9 +14,11 @@
 #' @param height The container div height.
 #' @param axis A logical value that when \code{TRUE} indicates that the
 #' axes will be displayed.
-#' @param num.ticks A three-element vector with the suggested number of
-#' ticks to display per axis. Set to NULL to not display ticks. The number
-#' of ticks may be adjusted by the program.
+#' @param num.ticks A three-element or one-element vector with the suggested number of
+#' ticks to display per axis. If a one-element vector, this number of ticks will be used
+#' for the axis with the smallest \code{axis.scale}, and the number of ticks on the remaining
+#' axes will be increased proportionally to the \code{axis.scale} values. Set to NULL to not display
+#' ticks. The number of ticks may be adjusted by the program.
 #' @param x.ticklabs A vector of tick labels of length \code{num.ticks[1]}, or
 #' \code{NULL} to show numeric labels.
 #' @param y.ticklabs A vector of tick labels of length \code{num.ticks[2]}, or
@@ -46,12 +48,22 @@
 #' @param ylim Optional two-element vector of y-axis limits. Default auto-scales to data.
 #' @param zlim Optional two-element vector of z-axis limits. Default auto-scales to data.
 #' @param pch Optional point glyphs, see notes.
+#' @param axis.scale Three-element vector to scale each axis as displayed on the plot,
+#' after first scaling them all to a unit length. Default \code{c(1,1,1)} thus results
+#' in the axes of equal length. If \code{NA}, the displayed axes will be scaled to the
+#' ratios determined from \code{c(xlim,ylim,zlim)}.
+#' @param elementId Use an explicit element ID for the widget (rather than an automatically generated one). Useful if you have other JavaScript that needs to explicitly discover and interact with a specific widget instance.
 #' @param ... Additional options (see note).
 #'
 #' @return
 #' An htmlwidget object that is displayed using the object's show or print method.
 #' (If you don't see your widget plot, try printing it with the \code{print} function.)
 #'
+#' @section Scaling the axes:
+#' With the default values, the displayed axes are scaled to equal one-unit length. If
+#' you instead need to maintain the relative distances between points in the original data,
+#' and the same distance between the tick labels, pass \code{num.ticks=6} (or any other single
+#' number) and \code{axis.scale=NA}
 #' @section Interacting with the plot:
 #' Press and hold the left mouse button (or touch or trackpad equivalent) and move
 #' the mouse to rotate the plot. Press and hold the right mouse button (or touch
@@ -64,6 +76,7 @@
 #' as a three-element character vector, see the examples below. A few additional
 #' plot options are also supported:
 #' \itemize{
+#'   \item{"lights"}{ a list of \code{light_ambient} and \code{light_directional} objects}
 #'   \item{"cex.lab"}{ font size scale factor for the axis labels}
 #'   \item{"cex.axis"}{ font size scale factor for the axis tick labels}
 #'   \item{"font.axis"}{ CSS font string used for all axis labels}
@@ -191,7 +204,7 @@
 #'   ))
 #' }
 #'
-#' @seealso scatterplot3d, rgl, points3d, lines3d
+#' @seealso scatterplot3d, rgl, points3d, lines3d, light_ambient, light_directional
 #' @importFrom stats na.omit
 #' @importFrom crosstalk is.SharedData
 #' @export
@@ -213,8 +226,15 @@ scatterplot3js <- function(
   signif = 8,
   bg = "#ffffff",
   cex.symbols = 1,
-  xlim, ylim, zlim, pch="@", ...)
+  xlim, ylim, zlim,
+  axis.scale = c(1,1,1),
+  pch="@",
+  elementId=NULL, ...)
 {
+  if(is.null(elementId))
+  {
+    elementId <- paste0(sample(c(letters, LETTERS, 0:9), 10, replace=TRUE), collapse="")
+  }
   # validate input
   if (!missing(y) && !missing(z)) {
     if (is.matrix(x))
@@ -271,8 +291,7 @@ scatterplot3js <- function(
   # Avoid asJson named vector warning
   colnames(x[[1]]) <- NULL
 
-  # The Javascript code assumes a coordinate system in the unit box.  Scale x
-  # to fit in there.
+  # Scale x to the output axis.scale ratio.
   n <- NROW
   mn <- Reduce(pmin, lapply(x, function(y) apply(y[, 1:3, drop=FALSE], 2, min)))
   mx <- Reduce(pmax, lapply(x, function(y) apply(y[, 1:3, drop=FALSE], 2, max)))
@@ -288,20 +307,32 @@ scatterplot3js <- function(
     mn[2] <- zlim[1]
     mx[2] <- zlim[2]
   }
-  x <- lapply(x, function(x) (x[, 1:3, drop=FALSE] - rep(mn, each = n)) / (rep(mx - mn, each = n)))
+  if(any(is.na(axis.scale))) {
+    axis.scale <- mx - mn
+  } else {
+    if(length(axis.scale)!=3) {
+      stop("axis.scale must be a vector of length three")
+    }
+    #reorder like the x
+    axis.scale <- axis.scale[c(1,3,2)]
+  }
+  #scale axis.scale so that the min value == 1; code below depends on it
+  axis.scale <- axis.scale / min(axis.scale)
+
+  x <- lapply(x, function(x) ((x[, 1:3, drop=FALSE] - rep(mn, each = n)) / rep((mx - mn)/axis.scale, each = n)))
 
   if (flip.y)
   {
     x <- lapply(x, function(y)
       {
-        y[, 3] <- 1 - y[, 3]
+        y[, 3] <- axis.scale[3] - y[, 3]
         y
       })
   }
 
   if ("center" %in% names(options) && options$center) # not yet documented, useful for graph
   {
-    x <- lapply(x, function(y) 2 * (y - 0.5))
+    x <- lapply(x, function(y) 2 * (y - axis.scale/2))
 # FIXME adjust scale/tick marks
   }
   if (!("linealpha" %in% names(options))) options$linealpha <- 1
@@ -314,21 +345,28 @@ scatterplot3js <- function(
   # Ticks
   if (!is.null(num.ticks))
   {
-    if (length(num.ticks) != 3) stop("num.ticks must have length 3")
-    num.ticks <- pmax(1, num.ticks[c(1, 3, 2)])
+    if (length(num.ticks) != 3) {
+      if(length(num.ticks) != 1) {
+        stop("num.ticks must have length 3")
+      }
+      num.ticks <- round(max(1,num.ticks) * axis.scale)
+    }
+    else {
+      num.ticks <- pmax(1, num.ticks[c(1, 3, 2)])
+    }
 
     t1 <- seq(from=mn[1], to=mx[1], length.out=num.ticks[1])
-    p1 <- (t1 - mn[1]) / (mx[1] - mn[1])
+    p1 <- (t1 - mn[1]) / (mx[1] - mn[1]) * axis.scale[1]
     t2 <- seq(from=mn[2], to=mx[2], length.out=num.ticks[2])
-    p2 <- (t2 - mn[2]) / (mx[2] - mn[2])
+    p2 <- (t2 - mn[2]) / (mx[2] - mn[2]) * axis.scale[2]
     t3 <- seq(from=mn[3], to=mx[3], length.out=num.ticks[3])
-    p3 <- (t3 - mn[3]) / (mx[3] - mn[3])
+    p3 <- (t3 - mn[3]) / (mx[3] - mn[3]) * axis.scale[3]
     if (flip.y) t3 <- t3[length(t3):1]
 
     pfmt <- function(x, d=2)
     {
       ans <- sprintf("%.2f", x)
-      i <- (abs(x) < 0.01 && x != 0)
+      i <- (abs(x) < 0.01 & x != 0)
       if (any(i))
       {
         ans[i] <- sprintf("%.2e", x)
@@ -346,6 +384,9 @@ scatterplot3js <- function(
     options$ytick <- p2
     options$ztick <- p3
   }
+
+  names(axis.scale) <- NULL
+  options$axislength <- axis.scale
 
   # lines
   if ("from" %in% names(options))
@@ -421,7 +462,8 @@ scatterplot3js <- function(
           height = height,
           htmlwidgets::sizingPolicy(padding = 0, browser.fill = TRUE),
           dependencies = crosstalk::crosstalkLibs(),
-          package = "threejs")
+          package = "threejs",
+          elementId=elementId)
   ans$call <- match.call()
   ans$vcache <- vcache # cached, un-transformed points for re-use (see points3d)
   ans$points3d <- function(...) stop("Syntax for adding points has changed: See ?points3d for examples.")
@@ -453,8 +495,7 @@ setMethod("vertices", signature(...="scatterplotThree"),
 #' @param z (Optional) vector of z-coordinate values, not required if
 #' \code{x} is a matrix.
 #' @param color Either a single hex or named color name (all points same color),
-#' or a vector of  hex or named color names as long as the number of data
-#' points to plot.
+#' or a vector of  hex or named color names as long as the number of points in \code{x}.
 #' @param pch Optional point glyphs or text strings, see \code{\link{scatterplot3js}}.
 #' @param size The plot point radius, either as a single number or a
 #' vector of sizes of length \code{nrow(x)}.
@@ -474,12 +515,12 @@ setMethod("vertices", signature(...="scatterplotThree"),
 #' # with the `vertices()` function:
 #' data(LeMis)
 #' graphjs(LeMis) %>% points3d(vertices(.), color="red", pch=V(LeMis)$label)
-#' 
+#'
 #' }
 #' @export
 points3d <- function(s, x, y, z, color="orange", pch="@", size=1, labels="")
 {
-  stopifnot("scatterplotThree" %in% class(s))
+  stopifnot(inherits(s, "scatterplotThree"))
   options <- s$x
   N <- length(options$vertices)  # number of animation frames, update last one
   # validate input
@@ -513,12 +554,14 @@ points3d <- function(s, x, y, z, color="orange", pch="@", size=1, labels="")
 
   # use scatterplot3js to scale/transform vertices as required
   oldlen <- length(options$vertices[[N]]) / 3
-  x <- rbind(s$vcache[[N]], x)
+  if(is.list(s$vcache)) x <- rbind(s$vcache[[N]], x)
+  else x <- rbind(s$vcache, x)
   center <- options$center
   if (is.null(center)) center <- FALSE
   args <- list(x=x, center=center, flip.y=options$flipy, options=TRUE, axis=options$axis,
                color=color, num.ticks=options$numticks, x.ticklabs=options$xticklabs,
-               y.ticklabs=options$yticklabs, z.ticklabs=options$zticklabs)
+               y.ticklabs=options$yticklabs, z.ticklabs=options$zticklabs,
+               axis.scale=options$axisscale)
   if (!is.null(options$xlim) || !is.symbol(options$xlim)) args$xlim <- options$xlim
   if (!is.null(options$ylim) || !is.symbol(options$ylim)) args$ylim <- options$ylim
   if (!is.null(options$zlim) || !is.symbol(options$zlim)) args$zlim <- options$zlim
@@ -581,26 +624,32 @@ points3d <- function(s, x, y, z, color="orange", pch="@", size=1, labels="")
 #' @export
 lines3d <- function(s, from, to, lwd=1, alpha=1, color)
 {
-  stopifnot("scatterplotThree" %in% class(s))
+  stopifnot(inherits(s, "scatterplotThree"))
   options <- s$x
+  lf <- length(from)
+  if(lf != length(to)) stop("`from` and `to` must be the same length")
   N <- length(options$vertices)  # number of animation frames, update last one
   from <- Map(indexline, list(from))
   to <- Map(indexline, list(to))
+  lcol <- NULL
   if (! missing(color)) # discard alpha, normalize line colors
   {
     lcol <- list(color)
     lc <- Map(function(x) col2rgb(x, alpha=FALSE), lcol)
-    lcol <- Map(function(x) apply(x, 2, function(x) rgb(x[1], x[2], x[3], maxColorValue=255)), lc)
+    lcol <- unlist(Map(function(x) apply(x, 2, function(x) rgb(x[1], x[2], x[3], maxColorValue=255)), lc))
+    lcol <- rep_len(lcol, lf)
   }
   if (is.null(options$from))
   {
-    options$from <- from
-    options$to <- to
-    if (!missing(color)) options$lcol <- lcol
+    options$from <- list(unlist(from))
+    options$to <- list(unlist(to))
+    if (! missing(color)) options$lcol <- list(unlist(lcol))
   } else {
-    options$from[[N]] <- unlist(from)
-    options$to[[N]] <- unlist(to)
-    if (!missing(color)) options$lcol[[N]] <- unlist(lcol)
+    if(is.list(options$from[[N]])) options$from[[N]] <- c(unlist(options$from[[N]]), unlist(from))
+    else options$from[[N]] <- c(options$from[[N]], unlist(from))
+    if(is.list(options$to[[N]])) options$to[[N]] <- c(unlist(options$to[[N]]), unlist(to))
+    else options$to[[N]] <- c(options$to[[N]], unlist(to))
+    if (! missing(color)) options$lcol[[N]] <- c(unlist(options$lcol[[N]]), unlist(lcol))
   }
   options$lwd <- lwd
   options$linealpha <- alpha
@@ -615,6 +664,26 @@ lines3d <- function(s, from, to, lwd=1, alpha=1, color)
   ans$vcache <- s$vcache
   ans$call <- match.call()
   ans
+}
+
+#' Plot illumination
+#' @param color the light color
+#' @param position the light position as an (x, y, z) coordinate vector with entries in [-1, 1]
+#' @return An object for use with the \code{lights} argument in \code{scatterplot3js} and \code{graphjs}.
+#' @export
+light_directional <- function(color = "#eeeeee", position = c(0, 0, 0))
+{
+  if(length(position) != 3) stop("Specify position as x, y, z coordinate vector, each in range [-1, 1].")
+  list(type = "directional", color = color, position = position)
+}
+
+#' Plot illumination
+#' @param color the ambient light color
+#' @return An object for use with the \code{lights} argument in \code{scatterplot3js} and \code{graphjs}.
+#' @export
+light_ambient <- function(color = "#eeeeee")
+{
+  list(type = "ambient", color = color)
 }
 
 

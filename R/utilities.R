@@ -73,7 +73,7 @@ gopts <- function(g)
   from <- g$from
   to <- g$to
   alpha <- NULL
-  if ("igraph" %in% class(g[[1]]))
+  if (inherits(g[[1]], "igraph"))
   {
     from <- as_edgelist(g[[1]])
     to   <- from[, 2] - 1
@@ -121,4 +121,12 @@ indexline <- function(x) # zero index and make sure each element is an array in 
   a <- as.integer(x) - 1L
   if (length(a) == 1) a <- list(a)
   a
+}
+
+# internal function to convert x to a JSON dataURI, where x is either character or raw
+# JSON text or a connection or a non-compressed file.
+jsuri <- function(x)
+{
+  if(is.character(x) && file.exists(x)) return(dataURI(file=x, encoding=NULL, mime="application/javascript"))
+  dataURI(data=x, encoding=NULL, mime="application/javascript")
 }

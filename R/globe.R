@@ -24,6 +24,7 @@
 #' @param bg Plot background color.
 #' @param width The container div width.
 #' @param height The container div height.
+#' @param elementId Use an explicit element ID for the widget (rather than an automatically generated one). Useful if you have other JavaScript that needs to explicitly discover and interact with a specific widget instance.
 #' @param ... Additional arguments to pass to the three.js renderer (see
 #' below for more information on these options).
 #'
@@ -89,8 +90,9 @@
 #' ll <- unique(frequent_flights[,3:4])
 #' # Plot frequent destinations as bars, and the flights to and from
 #' # them as arcs. Adjust arc width and color by frequency.
-#' globejs(lat=ll[,1], long=ll[,2], arcs=frequent_flights, bodycolor="#aaaaff",
-#'         arcsHeight=0.3, arcsLwd=2, arcsColor="#ffff00", arcsOpacity=0.15,
+#' globejs(lat=ll[, 1], long=ll[, 2], arcs=frequent_flights,
+#'         bodycolor="#aaaaff", arcsHeight=0.3, arcsLwd=2,
+#'         arcsColor="#ffff00", arcsOpacity=0.15,
 #'         atmosphere=TRUE, color="#00aaff", pointsize=0.5)
 #'
 #' \dontrun{
@@ -155,8 +157,14 @@ globejs <- function(
   atmosphere=FALSE,
   bg="black",
   height = NULL,
-  width = NULL, ...)
+  width = NULL,
+  elementId=NULL,
+  ...)
 {
+  if(is.null(elementId))
+  {
+    elementId <- paste0(sample(c(letters, LETTERS, 0:9), 10, replace=TRUE), collapse="")
+  }
   if (missing(lat) || missing(long))
   {
     lat <- NULL
@@ -224,7 +232,8 @@ globejs <- function(
       width = width,
       height = height,
       htmlwidgets::sizingPolicy(padding = 0, browser.fill = TRUE),
-      package = "threejs")
+      package = "threejs",
+      elementId=elementId)
 }
 
 #' @rdname threejs-shiny

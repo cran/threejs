@@ -4,9 +4,23 @@
 \alias{graphjs}
 \title{Interactive 3D Graph Visualization}
 \usage{
-graphjs(g, layout, vertex.color, vertex.size, vertex.shape, vertex.label,
-  edge.color, edge.width, edge.alpha, main = "", bg = "white",
-  width = NULL, height = NULL, ...)
+graphjs(
+  g,
+  layout,
+  vertex.color,
+  vertex.size,
+  vertex.shape,
+  vertex.label,
+  edge.color,
+  edge.width,
+  edge.alpha,
+  main = "",
+  bg = "white",
+  width = NULL,
+  height = NULL,
+  elementId = NULL,
+  ...
+)
 }
 \arguments{
 \item{g}{an \code{\link{igraph}} graph object or a list of \code{igraph} objects (see notes)}
@@ -34,6 +48,8 @@ graphjs(g, layout, vertex.color, vertex.size, vertex.shape, vertex.label,
 \item{width}{the widget container \code{div} width in pixels}
 
 \item{height}{the widget container \code{div} height in pixels}
+
+\item{elementId}{Use an explicit element ID for the widget (rather than an automatically generated one). Useful if you have other JavaScript that needs to explicitly discover and interact with a specific widget instance.}
 
 \item{...}{optional additional arguments passed to \code{\link{scatterplot3js}}}
 }
@@ -153,11 +169,18 @@ Enable crosstalk by supplying the optional agrument \code{crosstalk=df}, where \
 crosstalk-SharedData data.frame-like object with the same number of rows as graph vertices
 (see the examples).
 }
+
 \examples{
 set.seed(1)
 g <- sample_islands(3, 10, 5/10, 1)
-i <- cluster_optimal(g)
+i <- cluster_louvain(g)
 (graphjs(g, vertex.color=c("orange", "green", "blue")[i$membership], vertex.shape="sphere"))
+
+# similar example with user-defined directional lighting
+l1 = light_directional(color = "red", position = c(0, -0.8, 0.5))
+l2 = light_directional(color = "yellow", position = c(0, 0.8, -0.5))
+l3 = light_ambient(color = "#555555")
+(graphjs(g, vertex.color="gray", vertex.shape="sphere", lights=list(l1, l2, l3)))
 
 # Les Miserables Character Co-appearance Data
 data("LeMis")
@@ -216,4 +239,3 @@ The three.js project \url{http://threejs.org}.
 \seealso{
 \code{\link{igraph.plotting}}, \code{\link{scatterplot3js}}
 }
-

@@ -4,12 +4,34 @@
 \alias{scatterplot3js}
 \title{Interactive 3D Scatterplots}
 \usage{
-scatterplot3js(x, y, z, height = NULL, width = NULL, axis = TRUE,
-  num.ticks = c(6, 6, 6), x.ticklabs = NULL, y.ticklabs = NULL,
-  z.ticklabs = NULL, color = "steelblue", size = cex.symbols,
-  stroke = "black", flip.y = TRUE, grid = TRUE, renderer = c("auto",
-  "canvas"), signif = 8, bg = "#ffffff", cex.symbols = 1, xlim, ylim,
-  zlim, pch = "@", ...)
+scatterplot3js(
+  x,
+  y,
+  z,
+  height = NULL,
+  width = NULL,
+  axis = TRUE,
+  num.ticks = c(6, 6, 6),
+  x.ticklabs = NULL,
+  y.ticklabs = NULL,
+  z.ticklabs = NULL,
+  color = "steelblue",
+  size = cex.symbols,
+  stroke = "black",
+  flip.y = TRUE,
+  grid = TRUE,
+  renderer = c("auto", "canvas"),
+  signif = 8,
+  bg = "#ffffff",
+  cex.symbols = 1,
+  xlim,
+  ylim,
+  zlim,
+  axis.scale = c(1, 1, 1),
+  pch = "@",
+  elementId = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{Either a vector of x-coordinate values or a  three-column
@@ -29,9 +51,11 @@ coordinate axes. Column labels, if present, are used as axis labels.}
 \item{axis}{A logical value that when \code{TRUE} indicates that the
 axes will be displayed.}
 
-\item{num.ticks}{A three-element vector with the suggested number of
-ticks to display per axis. Set to NULL to not display ticks. The number
-of ticks may be adjusted by the program.}
+\item{num.ticks}{A three-element or one-element vector with the suggested number of
+ticks to display per axis. If a one-element vector, this number of ticks will be used
+for the axis with the smallest \code{axis.scale}, and the number of ticks on the remaining
+axes will be increased proportionally to the \code{axis.scale} values. Set to NULL to not display
+ticks. The number of ticks may be adjusted by the program.}
 
 \item{x.ticklabs}{A vector of tick labels of length \code{num.ticks[1]}, or
 \code{NULL} to show numeric labels.}
@@ -76,7 +100,14 @@ down.}
 
 \item{zlim}{Optional two-element vector of z-axis limits. Default auto-scales to data.}
 
+\item{axis.scale}{Three-element vector to scale each axis as displayed on the plot,
+after first scaling them all to a unit length. Default \code{c(1,1,1)} thus results
+in the axes of equal length. If \code{NA}, the displayed axes will be scaled to the
+ratios determined from \code{c(xlim,ylim,zlim)}.}
+
 \item{pch}{Optional point glyphs, see notes.}
+
+\item{elementId}{Use an explicit element ID for the widget (rather than an automatically generated one). Useful if you have other JavaScript that needs to explicitly discover and interact with a specific widget instance.}
 
 \item{...}{Additional options (see note).}
 }
@@ -92,6 +123,14 @@ follow the \code{scatterplot3d} package.
 Points with missing values are omitted from the plot, please try to avoid missing values
 in \code{x, y, z}.
 }
+\section{Scaling the axes}{
+
+With the default values, the displayed axes are scaled to equal one-unit length. If
+you instead need to maintain the relative distances between points in the original data,
+and the same distance between the tick labels, pass \code{num.ticks=6} (or any other single
+number) and \code{axis.scale=NA}
+}
+
 \section{Interacting with the plot}{
 
 Press and hold the left mouse button (or touch or trackpad equivalent) and move
@@ -107,6 +146,7 @@ Use the optional \code{...} argument to explicitly supply \code{axisLabels}
 as a three-element character vector, see the examples below. A few additional
 plot options are also supported:
 \itemize{
+  \item{"lights"}{ a list of \code{light_ambient} and \code{light_directional} objects}
   \item{"cex.lab"}{ font size scale factor for the axis labels}
   \item{"cex.axis"}{ font size scale factor for the axis tick labels}
   \item{"font.axis"}{ CSS font string used for all axis labels}
@@ -172,6 +212,7 @@ Enable crosstalk with the optional agrument \code{crosstalk=df}, where \code{df}
 crosstalk-SharedData data.frame-like object with the same number of rows as points
 (\code{scatterplot3js()}) or graph vertices (\code{graphjs()}) (see the examples).
 }
+
 \examples{
 # Example 1 from the scatterplot3d package (cf.)
 z <- seq(-10, 10, 0.1)
@@ -238,6 +279,5 @@ scatterplot3js(x, y, z, pch="@") \%>\%
 The three.js project: \url{http://threejs.org}. The HTML Widgets project: \url{http://htmlwidgets.org}.
 }
 \seealso{
-scatterplot3d, rgl, points3d, lines3d
+scatterplot3d, rgl, points3d, lines3d, light_ambient, light_directional
 }
-
