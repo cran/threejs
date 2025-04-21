@@ -43,7 +43,7 @@
 #' (see the references and examples below).
 #'
 #' @section Available rendering options:
-#' \itemize{
+#' \describe{
 #'   \item{"bodycolor"}{ The diffuse reflective color of the globe.}
 #'   \item{"emissive"}{ The emissive color of the globe object.}
 #'   \item{"lightcolor"}{ The color of the ambient light in the scene.}
@@ -55,6 +55,7 @@
 #'        The canvas renderer works across a greater variety of
 #'        viewers and browsers. The default setting of 'auto' automatically chooses
 #'        WebGL rendering if it's available.}
+#'   \item{"program"}{ User-supplied JavaScript run on plot initialization}
 #' }
 #' Specify colors with standard color names or hex color representations.
 #' The default values (well-suited to many earth-like map images) are
@@ -65,35 +66,37 @@
 #' globe corresponding to the center of the flat map image.
 #'
 #' @references
-#' The three.js project \url{http://threejs.org}.
+#' The three.js project \url{https://threejs.org}.
 #' (The corresponding three.js javascript file is in
 #' \code{ system.file("htmlwidgets/globejs",package="threejs")}.)
 #'
 #' An excellent overview of available map coordinate reference systems (PDF):
-#' \url{https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf}
+#' \url{https://www.nceas.ucsb.edu/sites/default/files/2020-04/OverviewCoordinateReferenceSystems.pdf}.
 #'
 #' @examples
+#' \dontrun{
 #' # Plot flights to frequent destinations from Callum Prentice's
-#' # global flight data set,
+#' # global flight data,
 #' # http://callumprentice.github.io/apps/flight_stream/index.html
-#' data(flights)
+#' f <- flights()
 #' # Approximate locations as factors
-#' dest   <- factor(sprintf("%.2f:%.2f",flights[,3], flights[,4]))
+#' dest   <- factor(sprintf("%.2f:%.2f", f[,3], f[,4]))
 #' # A table of destination frequencies
 #' freq <- sort(table(dest), decreasing=TRUE)
 #' # The most frequent destinations in these data, possibly hub airports?
 #' frequent_destinations <- names(freq)[1:10]
 #' # Subset the flight data by destination frequency
 #' idx <- dest %in% frequent_destinations
-#' frequent_flights <- flights[idx, ]
+#' frequent_flights <- f[idx, ]
 #' # Lat/long and counts of frequent flights
-#' ll <- unique(frequent_flights[,3:4])
+#' ll <- unique(frequent_flights[, 3:4])
 #' # Plot frequent destinations as bars, and the flights to and from
 #' # them as arcs. Adjust arc width and color by frequency.
 #' globejs(lat=ll[, 1], long=ll[, 2], arcs=frequent_flights,
 #'         bodycolor="#aaaaff", arcsHeight=0.3, arcsLwd=2,
 #'         arcsColor="#ffff00", arcsOpacity=0.15,
 #'         atmosphere=TRUE, color="#00aaff", pointsize=0.5)
+#' }
 #'
 #' \dontrun{
 #' # Plot populous world cities from the maps package.

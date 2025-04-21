@@ -20,6 +20,11 @@ See https://bwlewis.github.io/rthreejs for R examples.
 This project is based on the htmlwidgets package. See http://htmlwidgets.org
 for details and links to many other visualization widgets for R.
 
+# Changes in version 0.3.4 (August, 2021)
+
+Added a JavaScript 'program' function argument to run extra user-supplied
+JavaScript initialization code, see the graphjs help for examples.
+
 # New in version 0.3.0 (June, 2017)
 
 The new 0.3.0 package version introduces major changes. The `scatterplot3js()`
@@ -93,6 +98,7 @@ devtools::install_github("bwlewis/rthreejs")
 
 See `?scatterplot3d` for more examples and detailed help.
 ```r
+library(threejs)
 z <- seq(-10, 10, 0.1)
 x <- cos(z)
 y <- sin(z)
@@ -122,17 +128,3 @@ For detailed help on the widgets and additional examples, see
 ?graphjs
 ```
 
-
-# Status
-<a href="https://travis-ci.org/bwlewis/rthreejs">
-<img src="https://travis-ci.org/bwlewis/rthreejs.svg?branch=master" alt="Travis CI status"></img>
-</a>
-<a href="https://codecov.io/github/bwlewis/rthreejs/">
-<img src="https://codecov.io/github/bwlewis/rthreejs/coverage.svg?branch=master"/>
-</a>
-<a href="https://www.r-pkg.org/pkg/threejs">
-<img src="https://www.r-pkg.org/badges/version/threejs"/>
-</a>
-<a href="https://cranlogs.r-pkg.org/badges/threejs">
-<img src="https://cranlogs.r-pkg.org/badges/threejs"/>
-</a>

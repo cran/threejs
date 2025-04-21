@@ -4,7 +4,7 @@
 #'
 #' @name threejs-package
 #' @references
-#' \url{http://threejs.org}
+#' \url{https://threejs.org}
 #' @aliases threejs
 #' @examples
 #' \dontrun{
@@ -15,7 +15,8 @@
 #' # See also help for globe.js and scatterplot3.js
 #' }
 #'
-#' @docType package
+# @docType package
+"_PACKAGE"
 NULL
 
 

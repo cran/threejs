@@ -145,7 +145,7 @@ a point will display the label.
 Use the optional \code{...} argument to explicitly supply \code{axisLabels}
 as a three-element character vector, see the examples below. A few additional
 plot options are also supported:
-\itemize{
+\describe{
   \item{"lights"}{ a list of \code{light_ambient} and \code{light_directional} objects}
   \item{"cex.lab"}{ font size scale factor for the axis labels}
   \item{"cex.axis"}{ font size scale factor for the axis tick labels}
@@ -156,6 +156,7 @@ plot options are also supported:
   \item{"main"}{ Plot title text}
   \item{"top"}{ Top location in pixels from top of the plot title text}
   \item{"left"}{ Left location in pixels from center of the plot title text}
+  \item{"program"}{ User-supplied JavaScript run on plot initialization}
 }
 The default CSS font string is "48px Arial". Note that the format of this
 font string differs from, for instance, the usual `par(font.axis)`.
@@ -165,13 +166,13 @@ Use the \code{pch} option to specify points styles in WebGL-rendered plots.
 or a vector of character values of the same length as \code{x}. All
 character values are used literally ('+', 'x', '*', etc.) except for the
 following special cases:
-\itemize{
+\describe{
   \item{"o"}{ Plotted points appear as 3-d spheres.}
   \item{"@"}{ Plotted points appear as stroked disks.}
   \item{"."}{ Points appear as tiny squares.}
 }
 Character strings of more than one character are supported--see the examples.
-The \code{@} and {.} option exhibit the best performance, consider using
+The "\code{@}" and "\code{.}" options exhibit the best performance, consider using
 one of those to plot large numbers of points.
 
 Set the optional experimental \code{use.orbitcontrols=TRUE} argument to
@@ -183,7 +184,7 @@ use a more CPU-efficient but somewhat less fluid mouse/touch interface.
 See \code{\link{lines3d}} for an alternative interface.
 Lines are optionally drawn between points specified in \code{x, y, z} using
 the following new plot options.
-\itemize{
+\describe{
   \item{"from"}{ A numeric vector of indices of line starting vertices corresponding to entries in \code{x}.}
   \item{"to"}{ A numeric vector exactly as long as \code{from} of indices of line ending vertices corresponding
       to entries in \code{x}.}
@@ -276,7 +277,7 @@ scatterplot3js(x, y, z, pch="@") \%>\%
 
 }
 \references{
-The three.js project: \url{http://threejs.org}. The HTML Widgets project: \url{http://htmlwidgets.org}.
+The three.js project: \url{https://threejs.org}. The HTML Widgets project:
 }
 \seealso{
 scatterplot3d, rgl, points3d, lines3d, light_ambient, light_directional

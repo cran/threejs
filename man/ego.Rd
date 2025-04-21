@@ -4,12 +4,14 @@
 \name{ego}
 \alias{ego}
 \title{Facebook social circles}
-\format{An igraph package undirected graph object with 4039 vertices and 88234 edges. The
-graph includes a force-directed layout with vertices colored by the \code{\link{cluster_fast_greedy}}
-algorithm from the igraph package.}
+\format{
+An igraph package undirected graph object with 4039 vertices and 88234 edges. The
+graph includes a force-directed layout with vertices colored by the \code{cluster_fast_greedy}
+algorithm from the igraph package.
+}
 \source{
 Stanford SNAP network repository
-\url{http://snap.stanford.edu/data/facebook_combined.txt.gz}
+\url{https://snap.stanford.edu/data/facebook_combined.txt.gz}
 }
 \usage{
 data(ego)

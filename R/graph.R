@@ -1,8 +1,8 @@
 #' Interactive 3D Graph Visualization
 #'
-#' Make interactive 3D plots of \code{\link{igraph}} objects.
+#' Make interactive 3D plots of igraph objects.
 #'
-#' @param g an \code{\link{igraph}} graph object or a list of \code{igraph} objects (see notes)
+#' @param g an \code{igraph} graph object or a list of \code{igraph} objects (see notes)
 #' @param layout optional graph layout or list of layouts (see notes)
 #' @param vertex.color optional vertex color or vector of colors as long as the number of vertices in \code{g}
 #' @param vertex.size optional vertex size or vector of sizes
@@ -31,13 +31,13 @@
 #' @section Layout options:
 #' Use the \code{layout} parameter to control the visualization layout by supplying
 #' either a three-column matrix of vertex \code{x, y, z} coordinates, or a function
-#' that returns such a layout. The igraph \code{\link{layout_with_fr}} force-directed
+#' that returns such a layout. The igraph \code{layout_with_fr} force-directed
 #' layout is used by default (note that only 3D layouts are supported). Also see
 #' the animation section below.
 #'
 #' @section Vertex options:
 #' Optional parameters beginning with \code{vertex.} represent a subset of the igraph package
-#' vertex visualization options and work similarly, see \code{link{igraph.plotting}}.
+#' vertex visualization options and work similarly, see \code{igraph.plotting}.
 #' Vertex shapes in \code{graphjs} act somewhat differently, and are mapped to the
 #' \code{pch} option in \code{\link{scatterplot3js}}. In particular, \code{pch}
 #' character symbols or even short text strings may be specified. The \code{vertex.label}
@@ -78,7 +78,7 @@
 #' Specify the option \code{click=list} to animate the graph when specified vertices
 #' are clicked interactively, where \code{list} is a named list of animation entries.
 #' Each entry must itself be a list with the following entries
-#' \itemize{
+#' \describe{
 #' \item{g}{ optional a single igraph object with the same number of vertices
 #'    as \code{g} above (if specified this must be the first entry)}
 #' \item{layout}{ - optional a single igraph layout, or differential layout if \code{cumulative=TRUE}}
@@ -108,6 +108,11 @@
 #' crosstalk-SharedData data.frame-like object with the same number of rows as graph vertices
 #' (see the examples).
 #'
+#' @section User-defined JavaScript:
+#' Use the optional \code{program} argument (see \code{\link{scatterplot3js}}) to
+#' supply JavaScript code as a character string value.
+#' The code will be run during plot initialization. See the examples.
+#'
 #' @note
 #' Edge transparency values specified as part of \code{edge.color} are ignored, however
 #' you can set an overall transparency for edges with \code{edge.alpha}.
@@ -116,29 +121,52 @@
 #' An htmlwidget object that is displayed using the object's show or print method.
 #' (If you don't see your widget plot, try printing it with the \code{print} function.)
 #'
-#' @seealso \code{\link{igraph.plotting}}, \code{\link{scatterplot3js}}
+#' @seealso \code{igraph.plotting}, \code{\link{scatterplot3js}}
 #'
 #' @references
-#' The three.js project \url{http://threejs.org}.
+#' The three.js project \url{https://threejs.org}.
 #'
 #' @examples
 #' set.seed(1)
 #' g <- sample_islands(3, 10, 5/10, 1)
-#' i <- cluster_louvain(g)
-#' (graphjs(g, vertex.color=c("orange", "green", "blue")[i$membership], vertex.shape="sphere"))
+#' i <- membership(cluster_louvain(g))
+#' (graphjs(g, vertex.color=c("orange", "green", "blue")[i],
+#'          vertex.shape="sphere"))
 #'
 #' # similar example with user-defined directional lighting
-#' l1 = light_directional(color = "red", position = c(0, -0.8, 0.5))
-#' l2 = light_directional(color = "yellow", position = c(0, 0.8, -0.5))
-#' l3 = light_ambient(color = "#555555")
-#' (graphjs(g, vertex.color="gray", vertex.shape="sphere", lights=list(l1, l2, l3)))
+#' l1 <- light_directional(color="red", position=c(0, -0.8, 0.5))
+#' l2 <- light_directional(color="yellow", position=c(0, 0.8, -0.5))
+#' l3 <- light_ambient(color="#555555")
+#' (graphjs(g, vertex.color="gray", vertex.shape="sphere",
+#'          lights=list(l1, l2, l3)))
 #'
 #' # Les Miserables Character Co-appearance Data
 #' data("LeMis")
 #' (graphjs(LeMis))
 #'
+#' # Use HTML and CSS directly in each vertex label to customize
+#' # and align the legend:
+#' (graphjs(LeMis,
+#'          vertex.label=sprintf("<h2 style='text-align:left;'>%s</h2>",
+#'            V(LeMis)$label)))
+#'
+#' # The plot legend 'div' element is of CSS class 'infobox'. Use JavaScript
+#' # to customize labels to hover near the mouse pointer:
+#' program <- "document.addEventListener('mousemove', function(e) {
+#'   e.preventDefault();
+#'   let x = document.getElementsByClassName('infobox')[0];
+#'   x.style['background'] = '#00c9c2';
+#'   x.style['border-radius'] = '5px';
+#'   x.style['color'] = '#222';
+#'   x.style['font-family'] = 'sans-serif';
+#'   x.style['position'] = 'absolute';
+#'   x.style['top'] = e.pageY + 'px';
+#'   x.style['left'] = e.pageX + 'px';
+#' })"
+#' (graphjs(LeMis, program = program))
+#'
 #' # ...plot Character names
-#' (graphjs(LeMis, vertex.shape=V(LeMis)$label))
+#' (graphjs(LeMis, vertex.shape=V(LeMis)$label, vertex.size=0.3))
 #'
 #' # SNAP Facebook ego network dataset
 #' data("ego")
